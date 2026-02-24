@@ -1,0 +1,61 @@
+# Default Helm values for Forge
+# Override in your environment: helm upgrade --install forge . -f values-prod.yaml
+
+replicaCount: 3
+
+image:
+  repository: your-registry/forge-backend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: true
+  className: nginx
+  host: forge.your-domain.com
+  tls: true
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 50
+  targetCPUUtilizationPercentage: 70
+
+anthropicApiKey: ""   # Set via --set or external secret
+
+postgresql:
+  enabled: true
+  auth:
+    username: forge
+    password: change-me
+    database: forge
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+
+kafka:
+  enabled: true
+  replicaCount: 3
+
+monitoring:
+  enabled: true
+  serviceMonitor: true   # Requires Prometheus Operator
+
+governance:
+  minTestCoverage: 85
+  requireHumanApproval: true
+  auditRetentionDays: 90
+  autoRollback: true
