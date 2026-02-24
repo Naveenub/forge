@@ -112,7 +112,6 @@ forge/
 ├── ⚙️  backend/                           ◄  FastAPI · Async · CQRS
 │   ├── app/
 │   │   ├── main.py                       ◄  FastAPI entry · middleware · lifespan
-│   │   │
 │   │   ├── 🤖 agents/                    ◄  THE ENGINE
 │   │   │   ├── orchestrator.py           ◄  15 Claude agents · 5 domain hierarchy
 │   │   │   └── pipeline_engine.py        ◄  State machine · Execute→Review→Approve
