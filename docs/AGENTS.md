@@ -60,14 +60,10 @@ Each domain has 3 agents in a strict hierarchy. No stage proceeds without the le
 
 Each agent call includes:
 
-1. # System prompt:
-   Role definition, constraints, output format
-2. # Context:
-   Project name, requirements, previous domain outputs
-3. # Artifacts:
-   All artifacts from preceding stages (read-only)
-4. # Instruction:
-   Specific task for this level
+# 1. System prompt: Role definition, constraints, output format
+# 2. Context: Project name, requirements, previous domain outputs
+# 3. Artifacts: All artifacts from preceding stages (read-only)
+# 4. Instruction: Specific task for this level
 
 ---
 
