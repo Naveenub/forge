@@ -1,0 +1,371 @@
+# ─────────────────────────────────────────────────────────────
+# Forge - Kubernetes Manifests
+# Production-grade deployment with HPA, PDB, and autoscaling
+# ─────────────────────────────────────────────────────────────
+
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: forge
+  labels:
+    app.kubernetes.io/name: forge
+    environment: production
+
+---
+# ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forge-config
+  namespace: forge
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka-service:9092"
+  REDIS_URL: "redis://redis-service:6379/0"
+  DATABASE_URL_REPLICA: "postgresql+asyncpg://forge:secret@postgres-replica:5432/forge_db"
+  LOG_LEVEL: "INFO"
+  PROMETHEUS_ENABLED: "true"
+
+---
+# Secret (in production, use Vault or Sealed Secrets)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: forge-secrets
+  namespace: forge
+type: Opaque
+stringData:
+  DATABASE_URL: "postgresql+asyncpg://forge:${DB_PASSWORD}@postgres-primary:5432/forge_db"
+  ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+  SECRET_KEY: "${SECRET_KEY}"
+  JWT_SECRET_KEY: "${JWT_SECRET_KEY}"
+  REDIS_PASSWORD: "${REDIS_PASSWORD}"
+
+---
+# Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forge-backend
+  namespace: forge
+  labels:
+    app: forge-backend
+    version: "1.0.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: forge-backend
+  template:
+    metadata:
+      labels:
+        app: forge-backend
+        version: "1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: forge-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: backend
+          image: registry.example.com/forge/backend:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: forge-config
+            - secretRef:
+                name: forge-secrets
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 5"]
+      terminationGracePeriodSeconds: 30
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values: [forge-backend]
+                topologyKey: kubernetes.io/hostname
+
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: forge-backend-service
+  namespace: forge
+  annotations:
+    prometheus.io/scrape: "true"
+spec:
+  selector:
+    app: forge-backend
+  ports:
+    - port: 80
+      targetPort: 8000
+      name: http
+  type: ClusterIP
+
+---
+# Horizontal Pod Autoscaler - Backend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: forge-backend-hpa
+  namespace: forge
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: forge-backend
+  minReplicas: 3
+  maxReplicas: 50
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: External
+      external:
+        metric:
+          name: kafka_consumer_lag
+          selector:
+            matchLabels:
+              topic: pipeline-events
+        target:
+          type: AverageValue
+          averageValue: "1000"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 5
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+
+---
+# Pipeline Worker Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipeline-worker
+  namespace: forge
+  labels:
+    app: pipeline-worker
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: pipeline-worker
+  template:
+    metadata:
+      labels:
+        app: pipeline-worker
+    spec:
+      serviceAccountName: forge-sa
+      containers:
+        - name: pipeline-worker
+          image: registry.example.com/forge/backend:1.0.0
+          command: ["python", "-m", "app.workers.pipeline_worker"]
+          envFrom:
+            - configMapRef:
+                name: forge-config
+            - secretRef:
+                name: forge-secrets
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "1Gi"
+            limits:
+              cpu: "4000m"
+              memory: "4Gi"
+
+---
+# HPA - Pipeline Workers (queue-depth based)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: pipeline-worker-hpa
+  namespace: forge
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: pipeline-worker
+  minReplicas: 5
+  maxReplicas: 100
+  metrics:
+    - type: External
+      external:
+        metric:
+          name: kafka_consumer_lag
+          selector:
+            matchLabels:
+              topic: agent-tasks
+        target:
+          type: AverageValue
+          averageValue: "500"
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: forge-backend-pdb
+  namespace: forge
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: forge-backend
+
+---
+# Ingress with SSL
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: forge-ingress
+  namespace: forge
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "1000"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/websocket-services: "forge-backend-service"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  tls:
+    - hosts:
+        - forge.example.com
+      secretName: forge-tls
+  rules:
+    - host: forge.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: forge-backend-service
+                port:
+                  number: 80
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: forge-backend-service
+                port:
+                  number: 80
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: forge-frontend-service
+                port:
+                  number: 80
+
+---
+# ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: forge-sa
+  namespace: forge
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT_ID:role/forge-role"
+
+---
+# Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: forge-network-policy
+  namespace: forge
+spec:
+  podSelector:
+    matchLabels:
+      app: forge-backend
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - port: 8000
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres-primary
+      ports:
+        - port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - port: 6379
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kafka
+      ports:
+        - port: 9092
+    # Allow external HTTPS (for Anthropic API)
+    - ports:
+        - port: 443
