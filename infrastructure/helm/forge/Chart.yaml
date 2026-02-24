@@ -1,0 +1,19 @@
+apiVersion: v2
+name: forge
+description: Forge — Autonomous AI-powered SDLC platform
+type: application
+version: 2.0.0
+appVersion: "2.0.0"
+home: https://github.com/Naveenub/forge
+sources:
+  - https://github.com/Naveenub/forge
+maintainers:
+  - name: Platform Team
+    email: platform@company.com
+keywords:
+  - ai
+  - sdlc
+  - agents
+  - claude
+  - fastapi
+  - react
