@@ -1,0 +1,6 @@
+# Root-level shortcut — delegates to infrastructure/docker/docker-compose.yml
+# Usage: docker compose up -d
+version: "3.9"
+
+include:
+  - path: infrastructure/docker/docker-compose.yml
