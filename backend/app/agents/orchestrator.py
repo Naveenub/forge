@@ -764,3 +764,4 @@ def create_agent(stage_type: StageType, pipeline_id: str, stage_id: str) -> Base
     if not agent_class:
         raise ValueError(f"No agent registered for stage type: {stage_type}")
     return agent_class(pipeline_id=pipeline_id, stage_id=stage_id)
+    
