@@ -1,0 +1,108 @@
+{
+  "title": "Forge — Platform Overview",
+  "uid": "forge-overview",
+  "tags": ["forge", "platform"],
+  "timezone": "browser",
+  "refresh": "10s",
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "title": "API Request Rate",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [{
+        "expr": "sum(rate(http_requests_total{job=\"forge-backend\"}[5m])) by (status)",
+        "legendFormat": "HTTP {{ status }}"
+      }],
+      "fieldConfig": {"defaults": {"unit": "reqps"}}
+    },
+    {
+      "id": 2,
+      "title": "P99 Latency",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [{
+        "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"forge-backend\"}[5m])) by (le))",
+        "legendFormat": "p99"
+      }, {
+        "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"forge-backend\"}[5m])) by (le))",
+        "legendFormat": "p50"
+      }],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "id": 3,
+      "title": "Pipeline Status (last 24h)",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+      "targets": [{
+        "expr": "sum(increase(forge_pipeline_completed_total[24h])) by (status)",
+        "legendFormat": "{{ status }}"
+      }]
+    },
+    {
+      "id": 4,
+      "title": "Active Agents",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 8},
+      "targets": [{
+        "expr": "sum(forge_agent_active)",
+        "legendFormat": "Active"
+      }],
+      "fieldConfig": {"defaults": {"thresholds": {"steps": [{"color": "green", "value": 0}]}}}
+    },
+    {
+      "id": 5,
+      "title": "Pending Approvals",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 8},
+      "targets": [{"expr": "forge_pending_approvals", "legendFormat": "Pending"}],
+      "fieldConfig": {"defaults": {
+        "thresholds": {"steps": [
+          {"color": "green", "value": 0},
+          {"color": "yellow", "value": 5},
+          {"color": "red", "value": 20}
+        ]}
+      }}
+    },
+    {
+      "id": 6,
+      "title": "Error Rate %",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 8},
+      "targets": [{
+        "expr": "sum(rate(http_requests_total{status=~\"5..\",job=\"forge-backend\"}[5m])) / sum(rate(http_requests_total{job=\"forge-backend\"}[5m])) * 100",
+        "legendFormat": "Error %"
+      }],
+      "fieldConfig": {"defaults": {
+        "unit": "percent",
+        "thresholds": {"steps": [
+          {"color": "green", "value": 0},
+          {"color": "yellow", "value": 1},
+          {"color": "red", "value": 5}
+        ]}
+      }}
+    },
+    {
+      "id": 7,
+      "title": "DB Connection Pool",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "targets": [
+        {"expr": "forge_db_pool_used", "legendFormat": "Used"},
+        {"expr": "forge_db_pool_size", "legendFormat": "Max"}
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Kafka Consumer Lag",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "targets": [{
+        "expr": "kafka_consumer_group_lag{group=\"forge-workers\"}",
+        "legendFormat": "Lag ({{ topic }})"
+      }]
+    }
+  ]
+}

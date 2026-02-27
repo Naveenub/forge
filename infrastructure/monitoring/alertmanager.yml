@@ -1,0 +1,85 @@
+global:
+  resolve_timeout: 5m
+  slack_api_url: "${SLACK_WEBHOOK_URL}"
+
+# Route all alerts through Slack first, then email for critical
+route:
+  group_by: ["alertname", "cluster", "service"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: slack-general
+  routes:
+    - match:
+        severity: critical
+      receiver: slack-critical
+      continue: true
+    - match:
+        severity: critical
+      receiver: email-oncall
+    - match:
+        alertname: PipelineFailureRate
+      receiver: slack-pipeline
+    - match:
+        alertname: AgentTimeout
+      receiver: slack-pipeline
+
+receivers:
+  - name: slack-general
+    slack_configs:
+      - channel: "#forge-alerts"
+        title: '[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Severity:* {{ .Labels.severity }}
+          *Since:* {{ .StartsAt }}
+          {{ end }}
+        send_resolved: true
+
+  - name: slack-critical
+    slack_configs:
+      - channel: "#forge-oncall"
+        title: "🚨 CRITICAL: {{ .CommonLabels.alertname }}"
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Runbook:* {{ .Annotations.runbook_url }}
+          {{ end }}
+        send_resolved: true
+
+  - name: slack-pipeline
+    slack_configs:
+      - channel: "#forge-pipelines"
+        title: "Pipeline Alert: {{ .CommonLabels.alertname }}"
+        text: |
+          {{ range .Alerts }}
+          {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+
+  - name: email-oncall
+    email_configs:
+      - to: "oncall@forge.example.com"
+        from: "alerts@forge.example.com"
+        smarthost: "${SMTP_HOST}:587"
+        auth_username: "${SMTP_USERNAME}"
+        auth_password: "${SMTP_PASSWORD}"
+        subject: '[CRITICAL] {{ .CommonLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Started: {{ .StartsAt }}
+          {{ end }}
+        send_resolved: true
+
+inhibit_rules:
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: ["alertname", "cluster", "service"]
