@@ -1,0 +1,55 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: forge-ingress
+  namespace: forge
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # WebSocket support
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+    # TLS / cert-manager
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # Rate limiting at ingress level (coarse — fine-grained in app)
+    nginx.ingress.kubernetes.io/limit-rps: "200"
+    nginx.ingress.kubernetes.io/limit-connections: "50"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - forge.example.com
+      secretName: forge-tls
+  rules:
+    - host: forge.example.com
+      http:
+        paths:
+          # WebSocket endpoint (must come before /api)
+          - path: /ws/.*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: forge-backend
+                port:
+                  number: 8000
+          # API
+          - path: /api/.*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: forge-backend
+                port:
+                  number: 8000
+          # Frontend SPA (catch-all)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: forge-frontend
+                port:
+                  number: 80

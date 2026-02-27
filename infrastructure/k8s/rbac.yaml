@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: forge-sa
+  namespace: forge
+  annotations:
+    # For AWS IRSA (IAM Roles for Service Accounts)
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/forge-prod-role
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: forge-role
+  namespace: forge
+rules:
+  # Allow reading own pod info (for health checks, graceful shutdown)
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["forge-config"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: forge-rolebinding
+  namespace: forge
+subjects:
+  - kind: ServiceAccount
+    name: forge-sa
+    namespace: forge
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: forge-role
