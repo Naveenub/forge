@@ -1,9 +1,7 @@
-pytest
-pytest-asyncio
-pytest-cov
-factory-boy
-faker
-ruff
-mypy
-bandit
-safety
+-r requirements.txt
+
+pytest==8.0.2
+ruff==0.3.0
+mypy==1.8.0
+bandit==1.7.7
+safety==3.0.1
