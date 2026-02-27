@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/forge/forge/discussions
+    about: Ask questions, share ideas, or get help from the community.
+
+  - name: 🔒 Security Vulnerability
+    url: https://github.com/forge/forge/security/advisories/new
+    about: Please report security vulnerabilities privately via GitHub Security Advisories.
+
+  - name: 📖 Documentation
+    url: https://github.com/forge/forge/wiki
+    about: Check the wiki before opening an issue — your question may already be answered.
