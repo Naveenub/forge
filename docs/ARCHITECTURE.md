@@ -5,7 +5,9 @@
 Forge is a multi-layer platform:
 
 ```
-Browser → React Dashboard → FastAPI → Agent Orchestrator → Anthropic API → PostgreSQL + Redis + Kafka
+Browser → React Dashboard → FastAPI → Agent Orchestrator → Anthropic API
+                                   ↕
+                              PostgreSQL + Redis + Kafka
 ```
 
 ## Backend Layers
@@ -41,11 +43,11 @@ Browser → React Dashboard → FastAPI → Agent Orchestrator → Anthropic API
 
 ## Scaling
 
-| Component      | Min | Max | Trigger          |
-|----------------|-----|-----|------------------|
-| Backend pods   | 3   | 50  | CPU > 70%        |
-| Worker pods    | 5   | 100 | Kafka lag > 1000 |
-| DB connections | 20  | 200 | Pool pressure    |
+| Component | Min | Max | Trigger |
+|-----------|-----|-----|---------|
+| Backend pods | 3 | 50 | CPU > 70% |
+| Worker pods | 5 | 100 | Kafka lag > 1000 |
+| DB connections | 20 | 200 | Pool pressure |
 
 ## Security
 
