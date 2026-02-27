@@ -136,8 +136,6 @@ forge/
 │   │   │   └── notifications.py    # Slack + SMTP fire-and-forget notifications
 │   │   ├── db/
 │   │   │   ├── models.py           # All ORM models: User, Workspace, Project,
-│   │   │   │                       #   Pipeline, PipelineStage, Artifact,
-│   │   │   │                       #   ApprovalRequest, AuditLog, ApiKey, EventStore
 │   │   │   └── session.py          # write_session() async context manager
 │   │   ├── middleware/
 │   │   │   ├── audit.py            # AuditMiddleware — logs every mutating request
@@ -216,32 +214,44 @@ forge/
 │   │   ├── Dockerfile.backend
 │   │   ├── Dockerfile.frontend
 │   │   ├── nginx.conf
-│   │   ├── nginx/nginx.conf
+│   │   ├── nginx/
+│   │   │   └── nginx.conf
 │   │   ├── postgres/
 │   │   │   ├── init.sql
 │   │   │   └── pg_hba.conf
 │   │   └── monitoring/
 │   │       ├── prometheus.yml
 │   │       └── grafana/
-│   │           ├── dashboards/dashboards.yml
-│   │           └── datasources/datasources.yml
+│   │           ├── dashboards/
+│   │           |   └── dashboards.yml
+│   │           └── datasources/
+│   │               └── datasources.yml
 │   ├── helm/forge/                 # Helm chart
 │   │   ├── Chart.yaml
 │   │   ├── values.yaml
 │   │   ├── values.staging.yaml
 │   │   ├── values.production.yaml
 │   │   └── templates/
-│   │       ├── deployment.yaml     ├── service.yaml
-│   │       ├── ingress.yaml        ├── configmap.yaml
-│   │       ├── secrets.yaml        ├── hpa.yaml
-│   │       ├── cronjob.yaml        ├── serviceaccount.yaml
-│   │       ├── servicemonitor.yaml ├── _helpers.tpl
+│   │       ├── deployment.yaml
+│   │       ├── service.yaml
+│   │       ├── ingress.yaml
+│   │       ├── configmap.yaml
+│   │       ├── secrets.yaml
+│   │       ├── hpa.yaml
+│   │       ├── cronjob.yaml
+│   │       ├── serviceaccount.yaml
+│   │       ├── servicemonitor.yaml
+│   │       ├── _helpers.tpl
 │   │       └── NOTES.txt
 │   ├── k8s/                        # Raw Kubernetes manifests
-│   │   ├── namespace.yaml          ├── deployment.yaml
-│   │   ├── configmap.yaml          ├── secrets.yaml
-│   │   ├── ingress.yaml            ├── hpa.yaml
-│   │   ├── networkpolicy.yaml      ├── pdb.yaml
+│   │   ├── namespace.yaml
+│   │   ├── deployment.yaml
+│   │   ├── configmap.yaml
+│   │   ├── secrets.yaml
+│   │   ├── ingress.yaml
+│   │   ├── hpa.yaml
+│   │   ├── networkpolicy.yaml
+│   │   ├── pdb.yaml
 │   │   └── rbac.yaml
 │   └── monitoring/
 │       ├── prometheus.yml
@@ -250,8 +260,10 @@ forge/
 │       └── grafana/
 │           ├── forge-dashboard.json
 │           ├── datasources.yml
-│           ├── dashboards/dashboards.yml
-│           └── datasources/datasources.yml
+│           ├── dashboards/
+│           |   └── dashboards.yml
+│           └── datasources/
+|               └──datasources.yml
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── API.md
@@ -274,7 +286,7 @@ forge/
 └── LICENSE
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  56 files  ·  6 layers  ·  React → FastAPI → Agents → Postgres → K8s
+  146 files  ·  6 layers  ·  React → FastAPI → Agents → Postgres → K8s
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
