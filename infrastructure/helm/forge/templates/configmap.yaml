@@ -1,0 +1,68 @@
+{{/*
+  ConfigMap — runtime configuration injected into backend + worker pods.
+  Values are pulled from values.yaml; secrets are handled in secrets.yaml.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "forge.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forge.labels" . | nindent 4 }}
+data:
+  # ── Application ──────────────────────────────────────────────────────────
+  APP_NAME: {{ .Values.config.appName | default "Forge" | quote }}
+  APP_ENV:  {{ .Values.config.env     | default "production" | quote }}
+  DEBUG:    {{ .Values.config.debug   | default "false" | quote }}
+  VERSION:  {{ .Chart.AppVersion | quote }}
+
+  # ── Server ───────────────────────────────────────────────────────────────
+  HOST: "0.0.0.0"
+  PORT: {{ .Values.backend.service.port | default 8000 | quote }}
+  ALLOWED_HOSTS: {{ .Values.config.allowedHosts | default "*" | quote }}
+  ALLOWED_ORIGINS: {{ .Values.config.allowedOrigins | default "https://forge.example.com" | quote }}
+
+  # ── Database ─────────────────────────────────────────────────────────────
+  # DATABASE_URL is in secrets.yaml (contains credentials)
+  DB_POOL_SIZE:     {{ .Values.config.db.poolSize     | default 20 | quote }}
+  DB_MAX_OVERFLOW:  {{ .Values.config.db.maxOverflow  | default 10 | quote }}
+  DB_POOL_TIMEOUT:  {{ .Values.config.db.poolTimeout  | default 30 | quote }}
+
+  # ── Redis ────────────────────────────────────────────────────────────────
+  # REDIS_URL is in secrets.yaml
+  REDIS_MAX_CONNECTIONS: {{ .Values.config.redis.maxConnections | default 100 | quote }}
+  CACHE_TTL: {{ .Values.config.redis.cacheTtl | default 300 | quote }}
+
+  # ── Kafka ────────────────────────────────────────────────────────────────
+  KAFKA_BOOTSTRAP_SERVERS: {{ .Values.config.kafka.bootstrapServers | default "kafka:9092" | quote }}
+  KAFKA_TOPIC_PIPELINE_EVENTS: {{ .Values.config.kafka.topicPipelineEvents | default "pipeline-events" | quote }}
+  KAFKA_TOPIC_AGENT_TASKS:     {{ .Values.config.kafka.topicAgentTasks     | default "agent-tasks" | quote }}
+  KAFKA_TOPIC_NOTIFICATIONS:   {{ .Values.config.kafka.topicNotifications  | default "notifications" | quote }}
+  KAFKA_CONSUMER_GROUP: {{ .Values.config.kafka.consumerGroup | default "forge-workers" | quote }}
+
+  # ── JWT ──────────────────────────────────────────────────────────────────
+  JWT_ALGORITHM: {{ .Values.config.jwt.algorithm | default "HS256" | quote }}
+  JWT_ACCESS_TOKEN_EXPIRE_MINUTES: {{ .Values.config.jwt.accessTokenExpireMinutes | default 30 | quote }}
+  JWT_REFRESH_TOKEN_EXPIRE_DAYS:   {{ .Values.config.jwt.refreshTokenExpireDays   | default 7  | quote }}
+
+  # ── AI Agents ────────────────────────────────────────────────────────────
+  AGENT_MODEL:           {{ .Values.config.agents.model      | default "claude-opus-4-6" | quote }}
+  AGENT_MAX_TOKENS:      {{ .Values.config.agents.maxTokens  | default 8192 | quote }}
+  AGENT_TIMEOUT_SECONDS: {{ .Values.config.agents.timeout    | default 300  | quote }}
+
+  # ── Rate Limiting ────────────────────────────────────────────────────────
+  RATE_LIMIT_RPM:   {{ .Values.config.rateLimit.rpm   | default 1000 | quote }}
+  RATE_LIMIT_BURST: {{ .Values.config.rateLimit.burst | default 100  | quote }}
+
+  # ── Monitoring ───────────────────────────────────────────────────────────
+  PROMETHEUS_ENABLED: {{ .Values.config.monitoring.prometheusEnabled | default "true" | quote }}
+  {{- if .Values.config.monitoring.jaegerHost }}
+  JAEGER_HOST: {{ .Values.config.monitoring.jaegerHost | quote }}
+  {{- end }}
+
+  # ── Logging ──────────────────────────────────────────────────────────────
+  LOG_LEVEL: {{ .Values.config.logLevel | default "INFO" | quote }}
+
+  # ── Feature Flags ────────────────────────────────────────────────────────
+  FEATURE_DEPLOYMENT_ENABLED:   {{ .Values.config.features.deployment  | default "true" | quote }}
+  FEATURE_SECURITY_SCAN_ENABLED: {{ .Values.config.features.securityScan | default "true" | quote }}

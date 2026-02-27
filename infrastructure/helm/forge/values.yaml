@@ -59,3 +59,51 @@ governance:
   requireHumanApproval: true
   auditRetentionDays: 90
   autoRollback: true
+
+# ── Service Account ───────────────────────────────────────────────────────────
+serviceAccount:
+  create: true
+  annotations: {}
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/forge-role
+
+# ── Managed Secrets (set via --set or external secrets operator) ───────────────
+secrets:
+  create: false   # Set true only if NOT using external-secrets-operator
+  anthropicApiKey: ""
+  databaseUrl: ""
+  databaseUrlReplica: ""
+  jwtSecret: ""
+  redisUrl: ""
+
+# ── Backend-specific values ───────────────────────────────────────────────────
+backend:
+  replicaCount: 3
+  image:
+    repository: ghcr.io/your-org/forge-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+# ── Frontend-specific values ──────────────────────────────────────────────────
+frontend:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/your-org/forge-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+autoscaling:
+  targetMemoryUtilizationPercentage: 80

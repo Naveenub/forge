@@ -1,0 +1,58 @@
+Thank you for installing {{ .Chart.Name }} v{{ .Chart.Version }}!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⬡  AUTONOMOUS FORGE — {{ .Release.Name | upper }}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Release:    {{ .Release.Name }}
+Namespace:  {{ .Release.Namespace }}
+Chart:      {{ .Chart.Name }}-{{ .Chart.Version }}
+
+{{- if .Values.ingress.enabled }}
+
+1. Access the dashboard:
+   https://{{ .Values.ingress.host }}
+
+   API docs:
+   https://{{ .Values.ingress.host }}/api/docs
+
+{{- else }}
+
+1. Get the application URL by running:
+
+   kubectl port-forward \
+     svc/{{ include "forge.fullname" . }}-backend 8000:8000 \
+     --namespace {{ .Release.Namespace }}
+
+   Then open: http://localhost:8000/api/docs
+
+{{- end }}
+
+2. Run the database seed (first-time setup only):
+
+   kubectl exec -it \
+     deploy/{{ include "forge.fullname" . }}-backend \
+     --namespace {{ .Release.Namespace }} \
+     -- python seed.py
+
+3. Check rollout status:
+
+   kubectl rollout status \
+     deploy/{{ include "forge.fullname" . }}-backend \
+     --namespace {{ .Release.Namespace }}
+
+4. View logs:
+
+   kubectl logs \
+     -l app.kubernetes.io/name={{ include "forge.name" . }},app.kubernetes.io/component=backend \
+     --namespace {{ .Release.Namespace }} \
+     --follow
+
+5. Health checks:
+
+   kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "forge.name" . }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Docs:     https://github.com/forge/forge
+  Issues:   https://github.com/forge/forge/issues
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

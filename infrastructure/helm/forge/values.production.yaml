@@ -1,0 +1,140 @@
+# ── Forge Helm Values — PRODUCTION ───────────────────────────────────────────
+# Apply with:
+#   helm upgrade --install forge ./infrastructure/helm/forge \
+#     -f ./infrastructure/helm/forge/values.yaml \
+#     -f ./infrastructure/helm/forge/values.production.yaml \
+#     --namespace forge --create-namespace
+
+backend:
+  replicaCount: 3
+  image:
+    repository: ghcr.io/your-org/forge-backend
+    tag: "1.0.0"        # pin to exact release tag in production — never 'latest'
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "2000m"
+      memory: "1Gi"
+
+  env:
+    DEBUG: "false"
+    LOG_LEVEL: "INFO"
+    ENVIRONMENT: "production"
+    RATE_LIMIT_RPM: "120"
+
+  # Production pod anti-affinity — spread across nodes
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values: ["backend"]
+            topologyKey: kubernetes.io/hostname
+
+frontend:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/your-org/forge-frontend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+
+# Production ingress with rate limiting annotations
+ingress:
+  enabled: true
+  className: nginx
+  host: forge.your-domain.com
+  tls: true
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+
+# HA PostgreSQL (external managed DB recommended for production)
+postgresql:
+  enabled: false    # Use external RDS/Cloud SQL in production
+
+externalDatabase:
+  host: "your-rds-endpoint.us-east-1.rds.amazonaws.com"
+  port: 5432
+  database: forge_db
+  existingSecret: "forge-prod-db-secret"
+  existingSecretPasswordKey: "password"
+
+# HA Redis (ElastiCache or similar recommended)
+redis:
+  enabled: false    # Use external ElastiCache in production
+
+externalRedis:
+  host: "your-elasticache-endpoint.cache.amazonaws.com"
+  port: 6379
+  existingSecret: "forge-prod-redis-secret"
+
+# HPA — scale backend from 3 to 20 replicas
+autoscaling:
+  enabled: true
+  backend:
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  frontend:
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+# Pod disruption budget — at least 2 backend pods always available
+podDisruptionBudget:
+  enabled: true
+  backend:
+    minAvailable: 2
+  frontend:
+    minAvailable: 1
+
+# Full monitoring stack
+monitoring:
+  enabled: true
+  prometheusEnabled: true
+  grafanaEnabled: true
+  alertmanagerEnabled: true
+
+# Topology spread for high availability
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+
+# Secrets managed by external-secrets-operator or Vault
+secrets:
+  existingSecret: "forge-prod-secrets"
+
+# Security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]

@@ -1,0 +1,95 @@
+# ── Forge Helm Values — STAGING ──────────────────────────────────────────────
+# Apply with:
+#   helm upgrade --install forge-staging ./infrastructure/helm/forge \
+#     -f ./infrastructure/helm/forge/values.yaml \
+#     -f ./infrastructure/helm/forge/values.staging.yaml \
+#     --namespace forge-staging --create-namespace
+
+# Lower replica counts — staging doesn't need HA
+backend:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/your-org/forge-backend
+    tag: staging        # overridden by CI to the commit SHA
+    pullPolicy: Always
+
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+    limits:
+      cpu: "1000m"
+      memory: "512Mi"
+
+  env:
+    DEBUG: "true"
+    LOG_LEVEL: "DEBUG"
+    ENVIRONMENT: "staging"
+    RATE_LIMIT_RPM: "300"
+
+frontend:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/your-org/forge-frontend
+    tag: staging
+    pullPolicy: Always
+
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "128Mi"
+
+# Staging ingress — separate subdomain
+ingress:
+  enabled: true
+  className: nginx
+  host: staging.forge.your-domain.com
+  tls: true
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+# Single-instance DB in staging (no replication)
+postgresql:
+  enabled: true
+  primary:
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "256Mi"
+
+# Smaller Redis
+redis:
+  enabled: true
+  master:
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "200m"
+        memory: "128Mi"
+
+# HPA disabled in staging to save costs
+autoscaling:
+  enabled: false
+
+# Single replica — no disruption budget needed
+podDisruptionBudget:
+  enabled: false
+
+# Monitoring still enabled for visibility
+monitoring:
+  enabled: true
+  prometheusEnabled: true
+  grafanaEnabled: false    # no Grafana in staging — use shared prod Grafana
+
+# Secrets — reference staging-specific secret names
+secrets:
+  existingSecret: "forge-staging-secrets"

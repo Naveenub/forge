@@ -1,0 +1,162 @@
+{{- if .Values.cronjobs.enabled }}
+# ── Database Backup CronJob ────────────────────────────────────────────────────
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "forge.fullname" . }}-db-backup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forge.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cronjob
+  annotations:
+    description: "Nightly PostgreSQL backup to object storage"
+spec:
+  schedule: {{ .Values.cronjobs.backup.schedule | default "0 2 * * *" | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            {{- include "forge.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: cronjob-backup
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: {{ include "forge.fullname" . }}-sa
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+          containers:
+            - name: db-backup
+              image: "{{ .Values.cronjobs.backup.image | default "postgres:16-alpine" }}"
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+                  FILENAME="forge_backup_${TIMESTAMP}.pgdump"
+                  echo "Starting backup: ${FILENAME}"
+                  pg_dump \
+                    --host="${PGHOST}" \
+                    --port="${PGPORT:-5432}" \
+                    --username="${PGUSER}" \
+                    --dbname="${PGDATABASE}" \
+                    --format=custom \
+                    --compress=9 \
+                    --file="/tmp/${FILENAME}"
+                  echo "Backup complete: $(du -sh /tmp/${FILENAME})"
+                  # Upload to S3/GCS — configure BACKUP_BUCKET in secrets
+                  # aws s3 cp "/tmp/${FILENAME}" "s3://${BACKUP_BUCKET}/postgres/${FILENAME}"
+                  echo "Done."
+              env:
+                - name: PGHOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.secrets.existingSecret | default (printf "%s-secrets" (include "forge.fullname" .)) }}
+                      key: db-host
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.secrets.existingSecret | default (printf "%s-secrets" (include "forge.fullname" .)) }}
+                      key: db-user
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.secrets.existingSecret | default (printf "%s-secrets" (include "forge.fullname" .)) }}
+                      key: db-password
+                - name: PGDATABASE
+                  value: {{ .Values.postgresql.database | default "forge_db" | quote }}
+                - name: BACKUP_BUCKET
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.secrets.existingSecret | default (printf "%s-secrets" (include "forge.fullname" .)) }}
+                      key: backup-bucket
+                      optional: true
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "128Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir: {}
+---
+# ── Artifact Cleanup CronJob ───────────────────────────────────────────────────
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "forge.fullname" . }}-artifact-cleanup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "forge.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cronjob
+  annotations:
+    description: "Weekly cleanup of draft artifacts older than 30 days"
+spec:
+  schedule: {{ .Values.cronjobs.cleanup.schedule | default "0 3 * * 0" | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1800
+      template:
+        metadata:
+          labels:
+            {{- include "forge.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: cronjob-cleanup
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: {{ include "forge.fullname" . }}-sa
+          containers:
+            - name: cleanup
+              image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+              imagePullPolicy: {{ .Values.backend.image.pullPolicy | default "IfNotPresent" }}
+              command:
+                - python
+                - -c
+                - |
+                  import asyncio, os, sys
+                  sys.path.insert(0, '/app')
+                  async def cleanup():
+                      from app.core.database import init_db
+                      from app.db.session import get_write_session
+                      from app.db.models import Artifact
+                      from sqlalchemy import delete, select
+                      from datetime import datetime, timedelta
+                      await init_db()
+                      cutoff = datetime.utcnow() - timedelta(days=30)
+                      async with get_write_session() as db:
+                          result = await db.execute(
+                              delete(Artifact).where(
+                                  Artifact.status == 'draft',
+                                  Artifact.created_at < cutoff,
+                              ).returning(Artifact.id)
+                          )
+                          deleted = len(result.fetchall())
+                          await db.commit()
+                      print(f"Deleted {deleted} stale draft artifacts.")
+                  asyncio.run(cleanup())
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.secrets.existingSecret | default (printf "%s-secrets" (include "forge.fullname" .)) }}
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "128Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "256Mi"
+{{- end }}

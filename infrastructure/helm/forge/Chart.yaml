@@ -4,9 +4,9 @@ description: Forge — Autonomous AI-powered SDLC platform
 type: application
 version: 2.0.0
 appVersion: "2.0.0"
-home: https://github.com/Naveenub/forge
+home: https://github.com/your-org/forge
 sources:
-  - https://github.com/Naveenub/forge
+  - https://github.com/your-org/forge
 maintainers:
   - name: Platform Team
     email: platform@company.com
