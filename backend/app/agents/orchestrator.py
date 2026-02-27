@@ -7,14 +7,13 @@ import asyncio
 import json
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
-from uuid import UUID
+from typing import Any
 
 import anthropic
+
 from app.core.config import settings
 from app.core.events import EventBus, PipelineEvent
-from app.db.models import AgentDomain, AgentLevel, PipelineStatus, StageType
+from app.db.models import AgentDomain, AgentLevel, StageType
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +49,7 @@ class BaseAgent(ABC):
     def agent_name(self) -> str:
         """Human-readable agent name"""
 
-    async def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         """Execute agent task with Claude AI"""
         logger.info(f"[{self.agent_name}] Starting execution for pipeline {self.pipeline_id}")
 
@@ -97,16 +96,16 @@ class BaseAgent(ABC):
                     messages=[{"role": "user", "content": prompt}],
                 )
                 return message.content[0].text
-            except Exception as e:
+            except Exception:
                 if attempt == max_retries - 1:
                     raise
                 await asyncio.sleep(2 ** attempt)  # Exponential backoff
 
     @abstractmethod
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         """Build the specific prompt for this agent"""
 
-    def _parse_response(self, response: str) -> Dict[str, Any]:
+    def _parse_response(self, response: str) -> dict[str, Any]:
         """Parse agent response - override for structured output"""
         return {"content": response, "raw": response}
 
@@ -157,7 +156,7 @@ Format your response as JSON with these exact keys:
   "summary": "..."
 }"""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         return f"""Design a complete technical architecture for the following project:
 
 PROJECT NAME: {context.get('project_name', 'Unknown')}
@@ -200,7 +199,7 @@ Produce a review report as JSON:
 
 Be strict - only approve designs that meet enterprise standards."""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         architecture = context.get('architecture_output', {})
         return f"""Review the following architecture design critically:
 
@@ -239,7 +238,7 @@ Produce approval decision as JSON:
 
 Only approve when the architecture is solid and review concerns are addressed."""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         return f"""Make final approval decision on this architecture:
 
 DESIGN: {json.dumps(context.get('architecture_output', {}), indent=2)}
@@ -288,7 +287,7 @@ Produce complete code as JSON:
 
 Write COMPLETE files, not placeholders. Production-ready code only."""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         blueprint = context.get('approved_blueprint', {})
         return f"""Implement the following approved architecture:
 
@@ -330,7 +329,7 @@ Produce review as JSON:
   "review_summary": "..."
 }"""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         code_output = context.get('development_output', {})
         return f"""Review this code for production readiness:
 
@@ -364,7 +363,7 @@ Produce approval as JSON:
   "locked_version": "v1.0.0"
 }"""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         return f"""Approve or reject this code for QA phase:
 
 CODE OUTPUT: {json.dumps(context.get('development_output', {}), indent=2)}
@@ -410,7 +409,7 @@ Produce test suite as JSON:
 
 Write complete test files with pytest. Aim for 90%+ coverage."""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         code = context.get('approved_code', {})
         return f"""Generate comprehensive tests for this codebase:
 
@@ -450,7 +449,7 @@ Produce test review as JSON:
 
 Require minimum 85% coverage for approval."""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         tests = context.get('testing_output', {})
         return f"""Review these test suites for quality and completeness:
 
@@ -481,7 +480,7 @@ Produce approval as JSON:
   "approval_notes": "..."
 }"""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         return f"""Approve this build for security phase:
 
 TESTS: {json.dumps(context.get('testing_output', {}), indent=2)}
@@ -530,7 +529,7 @@ Produce security report as JSON:
   "summary": "..."
 }"""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         code = context.get('approved_code', {})
         return f"""Perform comprehensive security analysis on this codebase:
 
@@ -567,7 +566,7 @@ Produce validated report as JSON:
 
 Only approve when no critical or high unresolved vulnerabilities exist."""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         scan = context.get('security_output', {})
         return f"""Validate these security findings:
 
@@ -600,7 +599,7 @@ Produce clearance as JSON:
   "conditions": [...]
 }"""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         return f"""Issue final security clearance decision:
 
 SCAN RESULTS: {json.dumps(context.get('security_output', {}), indent=2)}
@@ -653,7 +652,7 @@ Produce infrastructure as JSON:
   "summary": "..."
 }"""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         arch = context.get('architecture', {})
         cloud = context.get('target_cloud', 'aws')
         return f"""Generate complete infrastructure for deployment on {cloud}:
@@ -693,7 +692,7 @@ Produce review as JSON:
   "review_summary": "..."
 }"""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         infra = context.get('devops_output', {})
         return f"""Review this infrastructure configuration:
 
@@ -727,7 +726,7 @@ Produce final approval as JSON:
   "approval_sign_off": "..."
 }"""
 
-    def _build_prompt(self, context: Dict[str, Any]) -> str:
+    def _build_prompt(self, context: dict[str, Any]) -> str:
         return f"""Approve production deployment:
 
 INFRA: {json.dumps(context.get('devops_output', {}), indent=2)}
@@ -764,4 +763,3 @@ def create_agent(stage_type: StageType, pipeline_id: str, stage_id: str) -> Base
     if not agent_class:
         raise ValueError(f"No agent registered for stage type: {stage_type}")
     return agent_class(pipeline_id=pipeline_id, stage_id=stage_id)
-    

@@ -2,17 +2,21 @@
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    hash_password,
+    verify_password,
+)
 from app.db.models import ApiKey, User
-from app.schemas.user import LoginRequest, TokenResponse, UserRead, UserUpdate
+from app.schemas.user import TokenResponse, UserRead, UserUpdate
 
 
 class AuthService:
@@ -21,7 +25,7 @@ class AuthService:
 
     # ── Internal helpers ──────────────────────────────────────────────────────
 
-    async def _get_user_by_email(self, email: str) -> Optional[User]:
+    async def _get_user_by_email(self, email: str) -> User | None:
         result = await self.db.execute(
             select(User).where(User.email == email.lower())
         )
@@ -46,7 +50,7 @@ class AuthService:
 
         await self.db.execute(
             update(User).where(User.id == user.id)
-            .values(last_login=datetime.now(timezone.utc))
+            .values(last_login=datetime.now(UTC))
         )
         await self.db.commit()
 
@@ -56,7 +60,7 @@ class AuthService:
             user=UserRead.model_validate(user),
         )
 
-    async def get_user(self, user_id: UUID) -> Optional[User]:
+    async def get_user(self, user_id: UUID) -> User | None:
         result = await self.db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
 

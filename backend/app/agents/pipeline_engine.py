@@ -5,18 +5,23 @@ Enforces strict enterprise SDLC governance with immutable stage transitions
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Any
-from uuid import UUID
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.orchestrator import create_agent
 from app.core.events import EventBus, PipelineEvent
-from app.db.models import (
-    Pipeline, PipelineStage, PipelineStatus, StageType,
-    AgentDomain, AgentLevel, Artifact, ArtifactType
-)
 from app.core.notifications import NotificationService
+from app.db.models import (
+    AgentDomain,
+    AgentLevel,
+    Artifact,
+    ArtifactType,
+    Pipeline,
+    PipelineStage,
+    PipelineStatus,
+    StageType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,28 +30,30 @@ logger = logging.getLogger(__name__)
 # Stage Configuration
 # ─────────────────────────────────────────────────────────────
 
+# fmt: off
 PIPELINE_STAGES = [
     # Architecture Domain
-    {"stage_type": StageType.ARCHITECTURE, "domain": AgentDomain.ARCHITECTURE, "level": AgentLevel.EXECUTION, "order": 1},
-    {"stage_type": StageType.ARCHITECTURE_REVIEW, "domain": AgentDomain.ARCHITECTURE, "level": AgentLevel.REVIEW, "order": 2},
-    {"stage_type": StageType.ARCHITECTURE_APPROVAL, "domain": AgentDomain.ARCHITECTURE, "level": AgentLevel.APPROVAL, "order": 3},
+    {"stage_type": StageType.ARCHITECTURE,          "domain": AgentDomain.ARCHITECTURE, "level": AgentLevel.EXECUTION, "order": 1},  # noqa: E501
+    {"stage_type": StageType.ARCHITECTURE_REVIEW,   "domain": AgentDomain.ARCHITECTURE, "level": AgentLevel.REVIEW,    "order": 2},  # noqa: E501
+    {"stage_type": StageType.ARCHITECTURE_APPROVAL, "domain": AgentDomain.ARCHITECTURE, "level": AgentLevel.APPROVAL,  "order": 3},  # noqa: E501
     # Development Domain
-    {"stage_type": StageType.DEVELOPMENT, "domain": AgentDomain.DEVELOPMENT, "level": AgentLevel.EXECUTION, "order": 4},
-    {"stage_type": StageType.DEVELOPMENT_REVIEW, "domain": AgentDomain.DEVELOPMENT, "level": AgentLevel.REVIEW, "order": 5},
-    {"stage_type": StageType.DEVELOPMENT_APPROVAL, "domain": AgentDomain.DEVELOPMENT, "level": AgentLevel.APPROVAL, "order": 6},
+    {"stage_type": StageType.DEVELOPMENT,           "domain": AgentDomain.DEVELOPMENT,  "level": AgentLevel.EXECUTION, "order": 4},  # noqa: E501
+    {"stage_type": StageType.DEVELOPMENT_REVIEW,    "domain": AgentDomain.DEVELOPMENT,  "level": AgentLevel.REVIEW,    "order": 5},  # noqa: E501
+    {"stage_type": StageType.DEVELOPMENT_APPROVAL,  "domain": AgentDomain.DEVELOPMENT,  "level": AgentLevel.APPROVAL,  "order": 6},  # noqa: E501
     # Testing Domain
-    {"stage_type": StageType.TESTING, "domain": AgentDomain.TESTING, "level": AgentLevel.EXECUTION, "order": 7},
-    {"stage_type": StageType.TESTING_REVIEW, "domain": AgentDomain.TESTING, "level": AgentLevel.REVIEW, "order": 8},
-    {"stage_type": StageType.TESTING_APPROVAL, "domain": AgentDomain.TESTING, "level": AgentLevel.APPROVAL, "order": 9},
+    {"stage_type": StageType.TESTING,               "domain": AgentDomain.TESTING,      "level": AgentLevel.EXECUTION, "order": 7},  # noqa: E501
+    {"stage_type": StageType.TESTING_REVIEW,        "domain": AgentDomain.TESTING,      "level": AgentLevel.REVIEW,    "order": 8},  # noqa: E501
+    {"stage_type": StageType.TESTING_APPROVAL,      "domain": AgentDomain.TESTING,      "level": AgentLevel.APPROVAL,  "order": 9},  # noqa: E501
     # Security Domain
-    {"stage_type": StageType.SECURITY, "domain": AgentDomain.SECURITY, "level": AgentLevel.EXECUTION, "order": 10},
-    {"stage_type": StageType.SECURITY_REVIEW, "domain": AgentDomain.SECURITY, "level": AgentLevel.REVIEW, "order": 11},
-    {"stage_type": StageType.SECURITY_APPROVAL, "domain": AgentDomain.SECURITY, "level": AgentLevel.APPROVAL, "order": 12},
+    {"stage_type": StageType.SECURITY,              "domain": AgentDomain.SECURITY,     "level": AgentLevel.EXECUTION, "order": 10},  # noqa: E501
+    {"stage_type": StageType.SECURITY_REVIEW,       "domain": AgentDomain.SECURITY,     "level": AgentLevel.REVIEW,    "order": 11},  # noqa: E501
+    {"stage_type": StageType.SECURITY_APPROVAL,     "domain": AgentDomain.SECURITY,     "level": AgentLevel.APPROVAL,  "order": 12},  # noqa: E501
     # DevOps Domain (Optional)
-    {"stage_type": StageType.DEVOPS, "domain": AgentDomain.DEVOPS, "level": AgentLevel.EXECUTION, "order": 13, "optional": True},
-    {"stage_type": StageType.DEVOPS_REVIEW, "domain": AgentDomain.DEVOPS, "level": AgentLevel.REVIEW, "order": 14, "optional": True},
-    {"stage_type": StageType.DEVOPS_APPROVAL, "domain": AgentDomain.DEVOPS, "level": AgentLevel.APPROVAL, "order": 15, "optional": True},
+    {"stage_type": StageType.DEVOPS,                "domain": AgentDomain.DEVOPS,       "level": AgentLevel.EXECUTION, "order": 13, "optional": True},  # noqa: E501
+    {"stage_type": StageType.DEVOPS_REVIEW,         "domain": AgentDomain.DEVOPS,       "level": AgentLevel.REVIEW,    "order": 14, "optional": True},  # noqa: E501
+    {"stage_type": StageType.DEVOPS_APPROVAL,       "domain": AgentDomain.DEVOPS,       "level": AgentLevel.APPROVAL,  "order": 15, "optional": True},  # noqa: E501
 ]
+# fmt: on
 
 
 # ─────────────────────────────────────────────────────────────
@@ -61,7 +68,9 @@ class PipelineStateMachine:
 
     VALID_TRANSITIONS = {
         PipelineStatus.PENDING: [PipelineStatus.RUNNING],
-        PipelineStatus.RUNNING: [PipelineStatus.WAITING_APPROVAL, PipelineStatus.FAILED, PipelineStatus.COMPLETED],
+        PipelineStatus.RUNNING: [
+            PipelineStatus.WAITING_APPROVAL, PipelineStatus.FAILED, PipelineStatus.COMPLETED
+        ],
         PipelineStatus.WAITING_APPROVAL: [PipelineStatus.APPROVED, PipelineStatus.REJECTED],
         PipelineStatus.APPROVED: [PipelineStatus.RUNNING, PipelineStatus.COMPLETED],
         PipelineStatus.REJECTED: [PipelineStatus.RUNNING],  # Retry after fix
@@ -73,7 +82,7 @@ class PipelineStateMachine:
         self.db = db
         self.event_bus = EventBus.get_instance()
         self.notifications = NotificationService()
-        self.context: Dict[str, Any] = {}  # Shared context across stages
+        self.context: dict[str, Any] = {}  # Shared context across stages
 
     async def run(self) -> None:
         """Execute the full pipeline"""
@@ -157,7 +166,9 @@ class PipelineStateMachine:
                     approved = output.get("approved", False)
                     if not approved:
                         stage.status = PipelineStatus.REJECTED
-                        stage.rejection_reason = output.get("approval_notes", "Rejected by approval agent")
+                        stage.rejection_reason = output.get(
+                            "approval_notes", "Rejected by approval agent"
+                        )
                         await self.db.commit()
 
                         # Notify for human intervention on rejection
@@ -166,13 +177,19 @@ class PipelineStateMachine:
                             stage_type=stage.stage_type,
                             reason=stage.rejection_reason
                         )
-                        logger.warning(f"Stage {stage.stage_type} rejected: {stage.rejection_reason}")
+                        logger.warning(
+                            "Stage %s rejected: %s", stage.stage_type, stage.rejection_reason
+                        )
                         return False
 
                 # Save artifact
                 await self._save_artifact(stage, output)
 
-                stage.status = PipelineStatus.APPROVED if stage.agent_level == AgentLevel.APPROVAL else PipelineStatus.COMPLETED
+                stage.status = (
+                    PipelineStatus.APPROVED
+                    if stage.agent_level == AgentLevel.APPROVAL
+                    else PipelineStatus.COMPLETED
+                )
                 stage.completed_at = datetime.utcnow()
                 await self.db.commit()
 
@@ -195,7 +212,7 @@ class PipelineStateMachine:
 
         return False
 
-    def _update_context(self, stage_type: StageType, output: Dict[str, Any]) -> None:
+    def _update_context(self, stage_type: StageType, output: dict[str, Any]) -> None:
         """Update shared context with stage outputs for downstream agents"""
         context_mapping = {
             StageType.ARCHITECTURE: "architecture_output",
@@ -218,7 +235,7 @@ class PipelineStateMachine:
         if context_key:
             self.context[context_key] = output
 
-    async def _save_artifact(self, stage: PipelineStage, output: Dict[str, Any]) -> None:
+    async def _save_artifact(self, stage: PipelineStage, output: dict[str, Any]) -> None:
         """Save immutable artifact for completed stage"""
         artifact_type_mapping = {
             StageType.ARCHITECTURE: ArtifactType.ARCHITECTURE_DOC,
@@ -231,7 +248,8 @@ class PipelineStateMachine:
         if not artifact_type:
             return
 
-        import hashlib, json
+        import hashlib
+        import json
         content = json.dumps(output)
         checksum = hashlib.sha256(content.encode()).hexdigest()
 
@@ -268,7 +286,9 @@ class PipelineStateMachine:
         )
         return result.scalar_one()
 
-    async def _handle_stage_failure(self, stage: PipelineStage, pipeline: Pipeline, error: str) -> None:
+    async def _handle_stage_failure(
+        self, stage: PipelineStage, pipeline: Pipeline, error: str
+    ) -> None:
         stage.status = PipelineStatus.FAILED
         pipeline.status = PipelineStatus.FAILED
         await self.db.commit()
@@ -279,7 +299,9 @@ class PipelineStateMachine:
         )
 
 
-async def create_pipeline_stages(pipeline: Pipeline, enabled_domains: List[str], deployment_enabled: bool, db: AsyncSession) -> None:
+async def create_pipeline_stages(
+    pipeline: Pipeline, enabled_domains: list[str], deployment_enabled: bool, db: AsyncSession
+) -> None:
     """Create all pipeline stages based on enabled domains"""
     for stage_config in PIPELINE_STAGES:
         domain = stage_config["domain"]

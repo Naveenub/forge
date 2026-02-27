@@ -1,6 +1,6 @@
 """SQLAlchemy async session factory."""
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
-
 
 # ── Engines ───────────────────────────────────────────────────────────────────
 

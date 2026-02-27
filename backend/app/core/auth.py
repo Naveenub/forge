@@ -14,8 +14,8 @@ from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import decode_token
 from app.core.database import get_read_db
+from app.core.security import decode_token
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +86,8 @@ def require_roles(*roles: str):
         result = await db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
         if not user or user.role.value not in roles:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions"
+            )
         return user
     return Depends(checker)

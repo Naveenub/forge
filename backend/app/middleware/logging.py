@@ -7,15 +7,14 @@ Integrates with the JSON logger configured in app/core/logging.py.
 """
 from __future__ import annotations
 
+import logging
 import time
 import uuid
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
-
-import logging
 
 logger = logging.getLogger("forge.access")
 
@@ -91,7 +90,11 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 extra["response_bytes"] = int(content_length)
 
             level = logging.WARNING if response.status_code >= 400 else logging.INFO
-            logger.log(level, "%s %s %d %.1fms", request.method, path, response.status_code, duration_ms, extra=extra)
+            logger.log(
+                level, "%s %s %d %.1fms",
+                request.method, path, response.status_code, duration_ms,
+                extra=extra,
+            )
 
         # ── Attach correlation ID to response ─────────────────────────────────
         response.headers["X-Request-ID"] = request_id
@@ -120,7 +123,8 @@ def _extract_user_id(request: Request) -> str | None:
         return None
     token = auth[7:]
     try:
-        import base64, json as _json
+        import base64
+        import json as _json
         # JWT is three base64url segments: header.payload.signature
         payload_b64 = token.split(".")[1]
         # Pad to a multiple of 4

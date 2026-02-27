@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LoginRequest(BaseModel):
@@ -21,23 +20,23 @@ class UserRead(BaseModel):
     username:    str
     name:        str
     role:        str
-    avatar:      Optional[str] = None
+    avatar:      str | None = None
     is_active:   bool
     is_verified: bool
-    last_login:  Optional[datetime] = None
+    last_login:  datetime | None = None
     created_at:  datetime
 
 
 class UserUpdate(BaseModel):
-    name:     Optional[str] = Field(None, max_length=255)
-    username: Optional[str] = Field(None, max_length=100)
-    avatar:   Optional[str] = Field(None, max_length=4)
+    name:     str | None = Field(None, max_length=255)
+    username: str | None = Field(None, max_length=100)
+    avatar:   str | None = Field(None, max_length=4)
 
 
 class TokenResponse(BaseModel):
     access_token:  str
     refresh_token: str
-    token_type:    str = "bearer"
+    token_type:    str = "bearer"  # noqa: S105
     user:          UserRead
 
 
@@ -52,9 +51,9 @@ class ApiKeyRead(BaseModel):
     id:         UUID
     name:       str
     prefix:     str
-    scopes:     List[str]
+    scopes:     list[str]
     revoked:    bool
-    last_used:  Optional[datetime] = None
+    last_used:  datetime | None = None
     created_at: datetime
 
 

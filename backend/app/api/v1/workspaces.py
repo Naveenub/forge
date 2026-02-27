@@ -4,12 +4,12 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import CurrentUserID
-from app.core.database import get_write_db, get_read_db
-from app.db.models import Workspace, WorkspaceMember, Project, UserRole
+from app.core.database import get_read_db, get_write_db
+from app.db.models import Project, UserRole, Workspace, WorkspaceMember
 from app.schemas.workspace import WorkspaceCreate, WorkspaceRead
 
 router = APIRouter()

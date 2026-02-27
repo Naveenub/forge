@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import CurrentUserID
 from app.core.database import get_read_db
-from app.db.models import PipelineStage, AgentDomain, AgentLevel, PipelineStatus
+from app.db.models import AgentDomain, AgentLevel, PipelineStage, PipelineStatus
 
 router = APIRouter()
 

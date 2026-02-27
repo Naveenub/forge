@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -10,15 +10,23 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import CurrentUserID
-from app.core.database import get_write_db, get_read_db
+from app.core.database import get_read_db, get_write_db
 from app.core.security import (
-    create_access_token, create_refresh_token,
-    decode_token, hash_password, verify_password,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_password,
+    verify_password,
 )
-from app.db.models import ApiKey, User, UserRole
+from app.db.models import ApiKey, User
 from app.schemas.user import (
-    ApiKeyCreated, ApiKeyRead, ChangePasswordRequest,
-    LoginRequest, TokenResponse, UserRead, UserUpdate,
+    ApiKeyCreated,
+    ApiKeyRead,
+    ChangePasswordRequest,
+    LoginRequest,
+    TokenResponse,
+    UserRead,
+    UserUpdate,
 )
 
 router = APIRouter()
@@ -38,7 +46,7 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_write_db))
 
     await db.execute(
         update(User).where(User.id == user.id)
-        .values(last_login=datetime.now(timezone.utc))
+        .values(last_login=datetime.now(UTC))
     )
     await db.commit()
 
@@ -64,7 +72,9 @@ async def refresh_token(refresh: str = Query(...), db: AsyncSession = Depends(ge
             raise ValueError("Not a refresh token")
         user_id = UUID(payload["sub"])
     except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
 
     result = await db.execute(
         select(User).where(User.id == user_id, User.is_active == True)  # noqa: E712

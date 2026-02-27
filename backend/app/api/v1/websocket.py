@@ -3,12 +3,9 @@ WebSocket API - Real-time pipeline tracking
 Broadcasts pipeline events to connected clients via WebSocket
 """
 import asyncio
-import json
 import logging
-from typing import Dict, Set
-from uuid import UUID
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState
 
 from app.core.auth import verify_ws_token
@@ -23,7 +20,7 @@ class ConnectionManager:
 
     def __init__(self):
         # pipeline_id -> set of WebSocket connections
-        self.active_connections: Dict[str, Set[WebSocket]] = {}
+        self.active_connections: dict[str, set[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, pipeline_id: str) -> None:
         await websocket.accept()
@@ -105,7 +102,7 @@ async def pipeline_websocket(
                     "data": event.data,
                     "timestamp": event.timestamp.isoformat(),
                 })
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Send heartbeat
                 if websocket.client_state == WebSocketState.CONNECTED:
                     await websocket.send_json({"type": "heartbeat"})

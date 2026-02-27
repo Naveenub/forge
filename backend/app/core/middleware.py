@@ -4,16 +4,14 @@ main.py imports RateLimitMiddleware, AuditMiddleware, SecurityMiddleware from he
 """
 from __future__ import annotations
 
-import time
-import uuid
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+from app.middleware.audit import AuditMiddleware  # noqa: F401
 from app.middleware.rate_limiter import RateLimitMiddleware  # noqa: F401
-from app.middleware.audit import AuditMiddleware              # noqa: F401
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):
@@ -38,7 +36,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"]       = "1; mode=block"
         response.headers["Referrer-Policy"]        = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"]     = "geolocation=(), microphone=(), camera=()"
-        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=63072000; includeSubDomains; preload"
+        )
 
         # Disable caching for API responses
         if request.url.path.startswith("/api/"):

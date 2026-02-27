@@ -2,16 +2,14 @@
 from __future__ import annotations
 
 import re
-from typing import Optional
 from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Project, Workspace, WorkspaceMember, UserRole
-from app.schemas.workspace import WorkspaceCreate, ProjectCreate
-
+from app.db.models import Project, UserRole, Workspace, WorkspaceMember
+from app.schemas.workspace import ProjectCreate, WorkspaceCreate
 
 # ─────────────────────────────────────────────────────────────────────────────
 # WorkspaceService
@@ -47,7 +45,7 @@ class WorkspaceService:
         self,
         owner_id: str | UUID,
         name: str,
-        description: Optional[str] = None,
+        description: str | None = None,
         **_kwargs,                     # absorb extra keyword args from tests
     ) -> Workspace:
         if len(name.strip()) < 1:
@@ -129,9 +127,9 @@ class ProjectService:
         self,
         workspace_id: str | UUID,
         name: str,
-        description: Optional[str] = None,
-        tech_stack: Optional[list] = None,
-        created_by: Optional[str | UUID] = None,
+        description: str | None = None,
+        tech_stack: list | None = None,
+        created_by: str | UUID | None = None,
         **_kwargs,
     ) -> Project:
         # verify workspace exists
@@ -168,7 +166,9 @@ class ProjectService:
     async def get_project(self, project_id: str | UUID) -> Project:
         return await self.get(project_id)
 
-    async def create_project(self, workspace_id: str | UUID, data: ProjectCreate, created_by=None) -> Project:
+    async def create_project(
+        self, workspace_id: str | UUID, data: ProjectCreate, created_by=None
+    ) -> Project:
         return await self.create(
             workspace_id=workspace_id,
             name=data.name,

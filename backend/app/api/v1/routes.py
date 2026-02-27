@@ -117,10 +117,14 @@ async def create_workspace(
 ) -> WorkspaceResponse:
     """Create a new workspace."""
     ws_id = str(uuid.uuid4())
-    return WorkspaceResponse(id=ws_id, name=payload.name, color=payload.color, members=1, project_count=0)
+    return WorkspaceResponse(
+        id=ws_id, name=payload.name, color=payload.color, members=1, project_count=0
+    )
 
 
-@router.delete("/workspaces/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["workspaces"])
+@router.delete(
+    "/workspaces/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["workspaces"]
+)
 async def delete_workspace(workspace_id: str, db: AsyncSession = Depends(get_db)) -> None:
     """Delete a workspace and all its projects."""
     pass
@@ -131,11 +135,15 @@ async def delete_workspace(workspace_id: str, db: AsyncSession = Depends(get_db)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/workspaces/{workspace_id}/projects", tags=["projects"])
-async def list_projects(workspace_id: str, db: AsyncSession = Depends(get_db)) -> list[ProjectResponse]:
+async def list_projects(
+    workspace_id: str, db: AsyncSession = Depends(get_db)
+) -> list[ProjectResponse]:
     return []
 
 
-@router.post("/workspaces/{workspace_id}/projects", status_code=status.HTTP_201_CREATED, tags=["projects"])
+@router.post(
+    "/workspaces/{workspace_id}/projects", status_code=status.HTTP_201_CREATED, tags=["projects"]
+)
 async def create_project(
     workspace_id: str,
     payload: ProjectCreate,
@@ -225,7 +233,9 @@ async def decide_approval(
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.get("/pipelines/{pipeline_id}/artifacts", tags=["artifacts"])
-async def list_artifacts(pipeline_id: str, db: AsyncSession = Depends(get_db)) -> list[ArtifactResponse]:
+async def list_artifacts(
+    pipeline_id: str, db: AsyncSession = Depends(get_db)
+) -> list[ArtifactResponse]:
     return []
 
 

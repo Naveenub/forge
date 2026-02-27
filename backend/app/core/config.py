@@ -2,9 +2,9 @@
 Application Configuration — all settings loaded from environment variables.
 Aliases ensure consistent naming across code written at different times.
 """
-from typing import List, Optional
-from pydantic_settings import BaseSettings
 import secrets
+
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -16,14 +16,14 @@ class Settings(BaseSettings):
     ENCRYPTION_KEY: str = secrets.token_urlsafe(32)
 
     # Server
-    HOST: str = "0.0.0.0"
+    HOST: str = "0.0.0.0"  # noqa: S104
     PORT: int = 8000
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "https://your-domain.com"]
-    ALLOWED_HOSTS: List[str] = ["*"]
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "https://your-domain.com"]
+    ALLOWED_HOSTS: list[str] = ["*"]
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/forge_db"
-    DATABASE_URL_REPLICA: Optional[str] = None
+    DATABASE_URL_REPLICA: str | None = None
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 10
     DB_POOL_TIMEOUT: int = 30
@@ -62,21 +62,21 @@ class Settings(BaseSettings):
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 1000  # alias
 
     # External Integrations
-    SLACK_BOT_TOKEN: Optional[str] = None
+    SLACK_BOT_TOKEN: str | None = None
     SLACK_CHANNEL_APPROVALS: str = "#approvals"
-    SMTP_HOST: Optional[str] = None
+    SMTP_HOST: str | None = None
     SMTP_PORT: int = 587
-    SMTP_USERNAME: Optional[str] = None
-    SMTP_PASSWORD: Optional[str] = None
+    SMTP_USERNAME: str | None = None
+    SMTP_PASSWORD: str | None = None
     EMAIL_FROM: str = "forge@company.com"
 
     # Vault
-    VAULT_URL: Optional[str] = None
-    VAULT_TOKEN: Optional[str] = None
+    VAULT_URL: str | None = None
+    VAULT_TOKEN: str | None = None
 
     # Monitoring
     PROMETHEUS_ENABLED: bool = True
-    JAEGER_HOST: Optional[str] = None
+    JAEGER_HOST: str | None = None
 
     # Feature Flags
     FEATURE_DEPLOYMENT_ENABLED: bool = True
@@ -85,15 +85,15 @@ class Settings(BaseSettings):
 
     # ── Backward-compat aliases accessed by security.py ──────────────────────
     @property
-    def JWT_SECRET(self) -> str:
+    def JWT_SECRET(self) -> str:  # noqa: N802
         return self.JWT_SECRET_KEY
 
     @property
-    def ACCESS_TOKEN_EXPIRE_MINUTES(self) -> int:
+    def ACCESS_TOKEN_EXPIRE_MINUTES(self) -> int:  # noqa: N802
         return self.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
 
     @property
-    def REFRESH_TOKEN_EXPIRE_DAYS(self) -> int:
+    def REFRESH_TOKEN_EXPIRE_DAYS(self) -> int:  # noqa: N802
         return self.JWT_REFRESH_TOKEN_EXPIRE_DAYS
 
     class Config:

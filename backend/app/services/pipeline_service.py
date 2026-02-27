@@ -2,15 +2,14 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import HTTPException, status
-from sqlalchemy import select, func, desc
+from fastapi import HTTPException
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Artifact, ApprovalRequest, Pipeline, PipelineStatus
+from app.db.models import ApprovalRequest, Artifact, Pipeline, PipelineStatus
 
 
 class PipelineService:
@@ -74,10 +73,13 @@ class PipelineService:
         ):
             raise HTTPException(
                 status_code=400,
-                detail=f"Cannot cancel pipeline in status '{pipeline.status}' — only pending/running/waiting can be cancelled",
+                detail=(
+                    f"Cannot cancel pipeline in status '{pipeline.status}'"
+                    " — only pending/running/waiting can be cancelled"
+                ),
             )
         pipeline.status = PipelineStatus.FAILED
-        pipeline.completed_at = datetime.now(timezone.utc)
+        pipeline.completed_at = datetime.now(UTC)
         await self.db.commit()
         await self.db.refresh(pipeline)
         return pipeline
@@ -112,7 +114,7 @@ class PipelineService:
         self,
         approval_id: str | UUID,
         decided_by: str | UUID,
-        comment: Optional[str] = None,
+        comment: str | None = None,
     ) -> ApprovalRequest:
         return await self._decide(approval_id, decided_by, "approved", comment)
 
@@ -120,7 +122,7 @@ class PipelineService:
         self,
         approval_id: str | UUID,
         decided_by: str | UUID,
-        comment: Optional[str] = None,
+        comment: str | None = None,
     ) -> ApprovalRequest:
         return await self._decide(approval_id, decided_by, "rejected", comment)
 
@@ -129,7 +131,7 @@ class PipelineService:
         approval_id: str | UUID,
         decided_by: str | UUID,
         decision: str,
-        comment: Optional[str],
+        comment: str | None,
     ) -> ApprovalRequest:
         approval = await self.db.get(ApprovalRequest, approval_id)
         if not approval:
@@ -140,14 +142,14 @@ class PipelineService:
         approval.status     = decision
         approval.decision   = decision
         approval.decided_by = decided_by
-        approval.decided_at = datetime.now(timezone.utc)
+        approval.decided_at = datetime.now(UTC)
         approval.notes      = comment
 
         if decision == "rejected":
             pipeline = await self.db.get(Pipeline, approval.pipeline_id)
             if pipeline:
                 pipeline.status = PipelineStatus.REJECTED
-                pipeline.completed_at = datetime.now(timezone.utc)
+                pipeline.completed_at = datetime.now(UTC)
 
         await self.db.commit()
         await self.db.refresh(approval)

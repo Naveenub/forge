@@ -2,22 +2,29 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func, desc
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import CurrentUserID
-from app.core.database import get_write_db, get_read_db
+from app.core.database import get_read_db, get_write_db
 from app.db.models import (
-    Pipeline, PipelineStage, PipelineStatus, ApprovalRequest,
-    Artifact, Project,
+    ApprovalRequest,
+    Artifact,
+    Pipeline,
+    PipelineStatus,
+    Project,
 )
 from app.schemas.pipeline import (
-    ArtifactRead, PipelineCreate, PipelineList, PipelineRead,
-    ApprovalRead, ApprovalAction,
+    ApprovalAction,
+    ApprovalRead,
+    ArtifactRead,
+    PipelineCreate,
+    PipelineList,
+    PipelineRead,
 )
 
 router = APIRouter()
@@ -102,10 +109,14 @@ async def cancel_pipeline(
     pipeline = result.scalar_one_or_none()
     if not pipeline:
         raise HTTPException(status_code=404, detail="Not found")
-    if pipeline.status not in (PipelineStatus.PENDING, PipelineStatus.RUNNING, PipelineStatus.WAITING_APPROVAL):
-        raise HTTPException(status_code=400, detail=f"Cannot cancel pipeline in status '{pipeline.status}'")
+    cancellable = (PipelineStatus.PENDING, PipelineStatus.RUNNING, PipelineStatus.WAITING_APPROVAL)
+    if pipeline.status not in cancellable:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot cancel pipeline in status '{pipeline.status}'",
+        )
     pipeline.status = PipelineStatus.FAILED
-    pipeline.completed_at = datetime.now(timezone.utc)
+    pipeline.completed_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(pipeline)
     return PipelineRead.model_validate(pipeline)
@@ -122,7 +133,10 @@ async def retry_pipeline(
     if not pipeline:
         raise HTTPException(status_code=404, detail="Not found")
     if pipeline.status not in (PipelineStatus.FAILED, PipelineStatus.REJECTED):
-        raise HTTPException(status_code=400, detail="Only failed or rejected pipelines can be retried")
+        raise HTTPException(
+            status_code=400,
+            detail="Only failed or rejected pipelines can be retried",
+        )
     pipeline.status = PipelineStatus.PENDING
     pipeline.current_stage = None
     pipeline.started_at = None
@@ -185,7 +199,7 @@ async def _decide(
     approval.decision   = decision
     approval.status     = decision
     approval.decided_by = user_id
-    approval.decided_at = datetime.now(timezone.utc)
+    approval.decided_at = datetime.now(UTC)
     approval.notes      = comment
 
     if decision == "rejected":
@@ -193,7 +207,7 @@ async def _decide(
         pipeline = pipe_q.scalar_one_or_none()
         if pipeline:
             pipeline.status = PipelineStatus.REJECTED
-            pipeline.completed_at = datetime.now(timezone.utc)
+            pipeline.completed_at = datetime.now(UTC)
 
     await db.commit()
     await db.refresh(approval)

@@ -6,17 +6,24 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from enum import StrEnum
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, Index, Integer,
-    String, Text, UniqueConstraint,
-    Enum as SQLEnum, func,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, relationship
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Base
@@ -30,7 +37,7 @@ class Base(DeclarativeBase):
 # Enums
 # ─────────────────────────────────────────────────────────────────────────────
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     OWNER       = "owner"
     ADMIN       = "admin"
     MANAGER     = "manager"
@@ -38,7 +45,7 @@ class UserRole(str, Enum):
     VIEWER      = "viewer"
 
 
-class PipelineStatus(str, Enum):
+class PipelineStatus(StrEnum):
     PENDING           = "pending"
     RUNNING           = "running"
     WAITING_APPROVAL  = "waiting_approval"
@@ -49,7 +56,7 @@ class PipelineStatus(str, Enum):
     PAUSED            = "paused"
 
 
-class StageType(str, Enum):
+class StageType(StrEnum):
     ARCHITECTURE         = "architecture"
     ARCHITECTURE_REVIEW  = "architecture_review"
     ARCHITECTURE_APPROVAL= "architecture_approval"
@@ -68,13 +75,13 @@ class StageType(str, Enum):
     DEPLOYMENT           = "deployment"
 
 
-class AgentLevel(str, Enum):
+class AgentLevel(StrEnum):
     EXECUTION = "execution"
     REVIEW    = "review"
     APPROVAL  = "approval"
 
 
-class AgentDomain(str, Enum):
+class AgentDomain(StrEnum):
     ARCHITECTURE = "architecture"
     DEVELOPMENT  = "development"
     TESTING      = "testing"
@@ -82,7 +89,7 @@ class AgentDomain(str, Enum):
     DEVOPS       = "devops"
 
 
-class ArtifactType(str, Enum):
+class ArtifactType(StrEnum):
     ARCHITECTURE_DOC    = "architecture_doc"
     ARCHITECTURE_DIAGRAM= "architecture_diagram"
     SOURCE_CODE         = "source_code"
@@ -98,7 +105,7 @@ class ArtifactType(str, Enum):
     ARCH_DOC            = "arch_doc"
 
 
-class AuditAction(str, Enum):
+class AuditAction(StrEnum):
     CREATE  = "create"
     READ    = "read"
     UPDATE  = "update"
@@ -133,7 +140,9 @@ class User(Base):
     updated_at      = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     extra           = Column(JSONB, default={})
 
-    workspace_memberships = relationship("WorkspaceMember", back_populates="user", foreign_keys="WorkspaceMember.user_id")
+    workspace_memberships = relationship(
+        "WorkspaceMember", back_populates="user", foreign_keys="WorkspaceMember.user_id"
+    )
     audit_logs            = relationship("AuditLog", back_populates="user")
     api_keys              = relationship("ApiKey", back_populates="user")
 
@@ -146,7 +155,9 @@ class ApiKey(Base):
     __tablename__ = "api_keys"
 
     id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id    = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     name       = Column(String(100), nullable=False, default="default")
     key_hash   = Column(String(255), nullable=False)          # bcrypt hash of raw key
     prefix     = Column(String(16), nullable=False)           # first 8 chars for display
@@ -184,8 +195,12 @@ class WorkspaceMember(Base):
     __tablename__ = "workspace_members"
 
     id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workspace_id = Column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
-    user_id      = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    workspace_id = Column(
+        UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id      = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     role         = Column(SQLEnum(UserRole), nullable=False, default=UserRole.CONTRIBUTOR)
     invited_by   = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     joined_at    = Column(DateTime, default=datetime.utcnow)
@@ -202,12 +217,16 @@ class Project(Base):
     __tablename__ = "projects"
 
     id                 = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workspace_id       = Column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    workspace_id       = Column(
+        UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
+    )
     name               = Column(String(255), nullable=False)
     description        = Column(Text, nullable=True)
     requirements       = Column(Text, nullable=True)
     tech_stack         = Column(JSONB, default=[])
-    enabled_domains    = Column(JSONB, default=["architecture", "development", "testing", "security"])
+    enabled_domains    = Column(
+        JSONB, default=["architecture", "development", "testing", "security"]
+    )
     deployment_enabled = Column(Boolean, default=False)
     target_cloud       = Column(String(50), nullable=True)
     status             = Column(String(50), default="draft")
@@ -228,7 +247,9 @@ class Pipeline(Base):
     __tablename__ = "pipelines"
 
     id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id    = Column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    project_id    = Column(
+        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
     version       = Column(Integer, default=1, nullable=False)
     status        = Column(SQLEnum(PipelineStatus), default=PipelineStatus.PENDING, nullable=False)
     current_stage = Column(SQLEnum(StageType), nullable=True)
@@ -240,7 +261,9 @@ class Pipeline(Base):
     created_at    = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     project   = relationship("Project", back_populates="pipelines")
-    stages    = relationship("PipelineStage", back_populates="pipeline", order_by="PipelineStage.order")
+    stages    = relationship(
+        "PipelineStage", back_populates="pipeline", order_by="PipelineStage.order"
+    )
     artifacts = relationship("Artifact", back_populates="pipeline")
 
     __table_args__ = (
@@ -252,7 +275,9 @@ class PipelineStage(Base):
     __tablename__ = "pipeline_stages"
 
     id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    pipeline_id     = Column(UUID(as_uuid=True), ForeignKey("pipelines.id", ondelete="CASCADE"), nullable=False)
+    pipeline_id     = Column(
+        UUID(as_uuid=True), ForeignKey("pipelines.id", ondelete="CASCADE"), nullable=False
+    )
     stage_type      = Column(SQLEnum(StageType), nullable=False)
     agent_domain    = Column(SQLEnum(AgentDomain), nullable=False)
     agent_level     = Column(SQLEnum(AgentLevel), nullable=False)
@@ -277,7 +302,9 @@ class Artifact(Base):
     __tablename__ = "artifacts"
 
     id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    pipeline_id   = Column(UUID(as_uuid=True), ForeignKey("pipelines.id", ondelete="CASCADE"), nullable=False)
+    pipeline_id   = Column(
+        UUID(as_uuid=True), ForeignKey("pipelines.id", ondelete="CASCADE"), nullable=False
+    )
     stage_id      = Column(UUID(as_uuid=True), ForeignKey("pipeline_stages.id"), nullable=False)
     artifact_type = Column(SQLEnum(ArtifactType), nullable=False)
     name          = Column(String(255), nullable=False)
@@ -366,4 +393,4 @@ class EventStore(Base):
 
 
 # ── Backward-compat shims ─────────────────────────────────────────────────────
-from app.core.database import get_db, get_write_db, get_read_db  # noqa: F401, E402
+from app.core.database import get_db, get_read_db, get_write_db  # noqa: F401, E402

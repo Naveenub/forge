@@ -7,9 +7,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable, Coroutine
+from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ class PipelineEvent:
     event_type:  str
     data:        dict[str, Any]
     stage_id:    str | None = None
-    timestamp:   datetime   = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp:   datetime   = field(default_factory=lambda: datetime.now(UTC))
     event_id:    str        = field(default_factory=lambda: str(uuid4()))
 
 
@@ -36,14 +37,14 @@ class EventBus:
     (one subscriber crash must not affect others).
     """
 
-    _instance: "EventBus | None" = None
+    _instance: EventBus | None = None
 
     def __init__(self) -> None:
         self._handlers: list[Handler] = []
         self._lock = asyncio.Lock()
 
     @classmethod
-    def get_instance(cls) -> "EventBus":
+    def get_instance(cls) -> EventBus:
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance

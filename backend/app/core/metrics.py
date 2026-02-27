@@ -13,7 +13,7 @@ Usage in main.py:
 from __future__ import annotations
 
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import APIRouter, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -47,8 +47,9 @@ def _init_prometheus() -> bool:
 
     try:
         from prometheus_client import (
-            Counter, Gauge, Histogram, REGISTRY,
-            CollectorRegistry, multiprocess
+            Counter,
+            Gauge,
+            Histogram,
         )
 
         _http_requests_total = Counter(
@@ -166,7 +167,7 @@ async def prometheus_metrics() -> Response:
             media_type="text/plain",
         )
 
-    from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+    from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
     return Response(
         content=generate_latest(),
         media_type=CONTENT_TYPE_LATEST,

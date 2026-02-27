@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -10,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class WorkspaceCreate(BaseModel):
     name:        str  = Field(..., min_length=1, max_length=80)
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class WorkspaceRead(BaseModel):
@@ -18,7 +17,7 @@ class WorkspaceRead(BaseModel):
 
     id:            UUID
     name:          str
-    description:   Optional[str] = None
+    description:   str | None = None
     owner_id:      UUID
     project_count: int = 0
     created_at:    datetime
@@ -26,8 +25,8 @@ class WorkspaceRead(BaseModel):
 
 class ProjectCreate(BaseModel):
     name:        str = Field(..., min_length=1, max_length=120)
-    description: Optional[str] = None
-    tech_stack:  Optional[List[str]] = None
+    description: str | None = None
+    tech_stack:  list[str] | None = None
 
 
 class ProjectRead(BaseModel):
@@ -36,7 +35,7 @@ class ProjectRead(BaseModel):
     id:             UUID
     workspace_id:   UUID
     name:           str
-    description:    Optional[str] = None
-    tech_stack:     List[str] = []
+    description:    str | None = None
+    tech_stack:     list[str] = []
     pipeline_count: int = 0
     created_at:     datetime

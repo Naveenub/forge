@@ -2,16 +2,16 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class PipelineCreate(BaseModel):
-    name:         Optional[str] = Field(None, max_length=200)
-    requirements: Optional[str] = None
-    context:      Optional[Dict[str, Any]] = None
+    name:         str | None = Field(None, max_length=200)
+    requirements: str | None = None
+    context:      dict[str, Any] | None = None
 
 
 class PipelineRead(BaseModel):
@@ -21,16 +21,16 @@ class PipelineRead(BaseModel):
     project_id:    UUID
     version:       int
     status:        str
-    current_stage: Optional[str] = None
-    started_at:    Optional[datetime] = None
-    completed_at:  Optional[datetime] = None
+    current_stage: str | None = None
+    started_at:    datetime | None = None
+    completed_at:  datetime | None = None
     triggered_by:  UUID
-    config:        Dict[str, Any] = {}
+    config:        dict[str, Any] = {}
     created_at:    datetime
 
 
 class PipelineList(BaseModel):
-    items: List[PipelineRead]
+    items: list[PipelineRead]
     total: int
     page:  int
     size:  int
@@ -45,15 +45,15 @@ class ApprovalRead(BaseModel):
     requested_by:  UUID
     required_role: str
     status:        str
-    decision:      Optional[str] = None
-    decided_by:    Optional[UUID] = None
-    decided_at:    Optional[datetime] = None
-    notes:         Optional[str] = None
+    decision:      str | None = None
+    decided_by:    UUID | None = None
+    decided_at:    datetime | None = None
+    notes:         str | None = None
     created_at:    datetime
 
 
 class ApprovalAction(BaseModel):
-    comment: Optional[str] = None
+    comment: str | None = None
 
 
 class ArtifactRead(BaseModel):
@@ -64,8 +64,8 @@ class ArtifactRead(BaseModel):
     stage_id:      UUID
     artifact_type: str
     name:          str
-    content:       Optional[str] = None
-    checksum:      Optional[str] = None
+    content:       str | None = None
+    checksum:      str | None = None
     version:       int
     is_immutable:  bool
     size_bytes:    int

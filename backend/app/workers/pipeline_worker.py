@@ -11,10 +11,10 @@ import asyncio
 import logging
 from uuid import UUID
 
+from app.agents.pipeline_engine import PipelineStateMachine
 from app.core.config import settings
 from app.core.database import write_session
 from app.core.kafka_client import get_consumer
-from app.agents.pipeline_engine import PipelineStateMachine
 
 logger = logging.getLogger(__name__)
 

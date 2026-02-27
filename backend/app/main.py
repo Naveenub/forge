@@ -10,24 +10,24 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any
 
+import uvicorn
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
-import uvicorn
 
-from app.core.config import settings
-from app.core.logging import configure_logging, get_logger, new_request_id
-from app.core.database import init_db
-from app.core.redis_client import init_redis
-from app.core.kafka_client import init_kafka
-from app.core.metrics import setup_metrics, metrics_router
-from app.core.telemetry import setup_tracing
-from app.api.v1 import auth, workspaces, projects, pipelines, agents, artifacts, websocket
+from app.api.v1 import agents, artifacts, auth, pipelines, projects, websocket, workspaces
 from app.api.v1.health import router as health_router
 from app.api.v1.routes import router as v1_router
-from app.core.middleware import RateLimitMiddleware, AuditMiddleware, SecurityMiddleware
+from app.core.config import settings
+from app.core.database import init_db
+from app.core.kafka_client import init_kafka
+from app.core.logging import configure_logging, get_logger, new_request_id
+from app.core.metrics import metrics_router, setup_metrics
+from app.core.middleware import AuditMiddleware, RateLimitMiddleware, SecurityMiddleware
+from app.core.redis_client import init_redis
+from app.core.telemetry import setup_tracing
 from app.workers.pipeline_worker import start_pipeline_worker
 
 # Initialise structured logging before anything else
@@ -104,8 +104,12 @@ app.include_router(v1_router)
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    logger.warning("Request validation failed", extra={"path": str(request.url), "errors": exc.errors()})
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    logger.warning(
+        "Request validation failed", extra={"path": str(request.url), "errors": exc.errors()}
+    )
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={"detail": "Validation error", "errors": exc.errors()},
@@ -114,12 +118,18 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: Any) -> JSONResponse:
-    return JSONResponse(status_code=404, content={"detail": f"Resource not found: {request.url.path}"})
+    return JSONResponse(
+        status_code=404, content={"detail": f"Resource not found: {request.url.path}"}
+    )
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    logger.error("Unhandled exception", extra={"path": str(request.url), "error": str(exc)}, exc_info=True)
+    logger.error(
+        "Unhandled exception",
+        extra={"path": str(request.url), "error": str(exc)},
+        exc_info=True,
+    )
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 

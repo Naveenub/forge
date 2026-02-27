@@ -8,9 +8,6 @@ Usage in main.py lifespan:
 """
 from __future__ import annotations
 
-import logging
-from typing import Optional
-
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -33,7 +30,7 @@ def setup_tracing(app=None, service_name: str = "forge-backend") -> None:  # noq
         from opentelemetry import trace
         from opentelemetry.sdk.resources import Resource
         from opentelemetry.sdk.trace import TracerProvider
-        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor  # noqa: F401
 
         resource = Resource.create({"service.name": service_name})
         provider = TracerProvider(resource=resource)
@@ -59,7 +56,7 @@ def _setup_exporter(provider) -> None:  # noqa: ANN001
         import os
 
         from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor  # noqa: F401
 
         endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
         exporter = OTLPSpanExporter(endpoint=endpoint, insecure=True)
@@ -68,9 +65,6 @@ def _setup_exporter(provider) -> None:  # noqa: ANN001
 
     except ImportError:
         try:
-            from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-            from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-
             # Fallback: discard spans silently (no console spam in production)
             logger.debug("OTLP exporter not available; spans will be dropped")
         except ImportError:
