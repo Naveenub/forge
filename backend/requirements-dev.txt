@@ -1,0 +1,9 @@
+pytest
+pytest-asyncio
+pytest-cov
+factory-boy
+faker
+ruff
+mypy
+bandit
+safety
