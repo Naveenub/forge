@@ -23,35 +23,36 @@ Architecture → Dev → Testing → Security → DevOps
 
 ---
 
-What is this?
+## What is this?
 
-The Forge replaces your entire engineering review chain with 15 specialized Claude-powered AI agents organized across 5 domains. Each domain enforces a strict Execute → Review → Approve governance hierarchy - no stage proceeds without a sign-off.
+The **Forge** replaces your entire engineering review chain with 15 specialized Claude-powered AI agents organized across 5 domains. Each domain enforces a strict Execute → Review → Approve governance hierarchy - no stage proceeds without a sign-off.
 
 ```
-Requirements → Architecture → Development → Testing → Security → DevOps → Production → 3 agents → 3 agents → 3 agents → 3 agents → 3 agents
+Requirements → Architecture  →  Development  →  Testing   →  Security  →  DevOps  →  Production
+                ↑ 3 agents      ↑ 3 agents      ↑ 3 agents   ↑ 3 agents   ↑ 3 agents
 ```
 
-Agent Domains
+### Agent Domains
 
-| Domain        | Agents                                    | Responsibility                    |
-|---------------|-------------------------------------------|-----------------------------------|
-| Architecture  | Architect · Sr. Architect · Arch Approval | Design, schema, API contracts     |
-| Development   | Developer · Sr. Developer · Dev Manager   | Code generation, review, approval |
-| Testing       | Tester · Sr. Tester · QA Manager          | Test suites, coverage, QA gate    |
-| Security      | Sec Engineer · Sr. Security · Sec Manager | OWASP scan, SAST, clearance       |
-| DevOps        | Cloud Eng · Cloud Lead · Cloud Manager    | Docker, K8s, Helm, CI/CD, deploy  |
+| Domain            | Agents                                    | Responsibility                    |
+| ----------------- | ----------------------------------------- | --------------------------------- |
+| **Architecture**  | Architect · Sr. Architect · Arch Approval | Design, schema, API contracts     |
+| **Development**   | Developer · Sr. Developer · Dev Manager   | Code generation, review, approval |
+| **Testing**       | Tester · Sr. Tester · QA Manager          | Test suites, coverage, QA gate    |
+| **Security**      | Sec Engineer · Sr. Security · Sec Manager | OWASP scan, SAST, clearance       |
+| **DevOps**        | Cloud Eng · Cloud Lead · Cloud Manager    | Docker, K8s, Helm, CI/CD, deploy  |
 
 ---
 
-Quick Start
+## Quick Start
 
-Prerequisites
+### Prerequisites
 - Docker & Docker Compose
 - Node.js 18+
 - Python 3.11+
 - Anthropic API key
 
-1. Clone & configure
+### 1. Clone & configure
 
 ```bash
 git clone https://github.com/your-org/forge.git
@@ -60,7 +61,7 @@ cp .env.example .env
 Edit .env and add your ANTHROPIC_API_KEY
 ```
 
-2. Start with Docker Compose
+### 2. Start with Docker Compose
 
 ```bash
 cd infrastructure/docker
@@ -75,7 +76,7 @@ docker compose up -d
 | Grafana            | http://localhost:3001          |
 | Prometheus         | http://localhost:9090          |
 
-3. Local development
+### 3. Local development
 
 ```bash
 Backend
@@ -84,7 +85,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 
-Frontend (separate terminal)
+# Frontend (separate terminal)
 cd frontend
 npm install
 npm run dev
@@ -98,51 +99,191 @@ npm run dev
 forge/
 ├── 🖥  frontend/                         ◄  React 18 + Vite Dashboard
 │   ├── src/
-│   │   ├── App.jsx                       ◄  Full dashboard · auth · all views
-│   │   ├── main.jsx                      ◄  Entry point
-│   │   ├── components/                   ◄  Shared UI atoms
-│   │   ├── hooks/                        ◄  Custom React hooks
-│   │   └── utils/                        ◄  Helpers & constants
+│   │   ├── App.jsx                       # Main dashboard (all views)
+│   │   ├── main.jsx
+│   │   ├── test-setup.js
+│   │   ├── components/                   # Shared UI components
+│   │   │   ├── AgentCard.jsx
+│   │   │   ├── ApprovalCard.jsx
+│   │   │   ├── ArtifactViewer.jsx
+│   │   │   ├── Avatar.jsx
+│   │   │   ├── Button.jsx
+│   │   │   ├── Dropdown.jsx
+│   │   │   ├── EmptyState.jsx
+│   │   │   ├── ErrorBoundary.jsx
+│   │   │   ├── Input.jsx
+│   │   │   ├── LoadingSpinner.jsx
+│   │   │   ├── LogStream.jsx
+│   │   │   ├── MetricCard.jsx
+│   │   │   ├── Modal.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── PipelineCard.jsx
+│   │   │   ├── Sidebar.jsx
+│   │   │   ├── Skeleton.jsx
+│   │   │   ├── StatusBadge.jsx
+│   │   │   ├── Table.jsx
+│   │   │   ├── Toast.jsx
+│   │   │   └── WorkspaceCard.jsx
+│   │   ├── hooks/                        # Custom React hooks
+│   │   │   ├── useAgents.js
+│   │   │   ├── useArtifacts.js
+│   │   │   ├── useAuth.js
+│   │   │   ├── useMetrics.js
+│   │   │   ├── usePipeline.js
+│   │   │   ├── useUtils.js
+│   │   │   ├── useWebSocket.js
+│   │   │   └── useWorkspace.js
+│   │   └── utils/                        # Helpers & constants
+│   │        ├── api.js
+│   │        ├── constants.js
+│   │        ├── errors.js
+│   │        ├── formatters.js
+│   │        ├── storage.js
+│   │        └── validators.js
 │   ├── public/
-│   │   └── favicon.svg
+│   │   ├── 404.html
+│   │   ├── favicon.svg
+│   │   ├── manifest.json
+│   │   └── robots.txt
+│   ├── .eslintrc.cjs
 │   ├── index.html
 │   ├── package.json
 │   ├── vite.config.js
-│   └── .eslintrc.cjs
+│   └── vitest.config.js
 ├── ⚙️  backend/                           ◄  FastAPI · Async · CQRS
+│   ├── alembic/
+│   │   ├── versions/
+│   │   │   └── 001_initial_schema.py
+│   │   ├── env.py
+│   │   └── script.py.mako
 │   ├── app/
-│   │   ├── main.py                       ◄  FastAPI entry · middleware · lifespan
 │   │   ├── 🤖 agents/                    ◄  THE ENGINE
 │   │   │   ├── orchestrator.py           ◄  15 Claude agents · 5 domain hierarchy
 │   │   │   └── pipeline_engine.py        ◄  State machine · Execute→Review→Approve
-│   │   ├── 🔌 api/v1/
-│   │   │   ├── routes.py                 ◄  REST · workspaces/projects/pipelines
-│   │   │   └── websocket.py              ◄  Real-time log streaming
+│   │   ├── 🔌 api/
+│   │   │   └── v1/ 
+│   │   │       ├── agents.py      # Real-time Agents
+│   │   │       ├── artifacts.py   # Real-time Artifacts
+│   │   │       ├── auth.py		 # Real-time Auth
+│   │   │       ├── health.py		 # Real-time Health
+│   │   │       ├── pipelines.py	 # Real-time Pipelines
+│   │   │       ├── projects.py	 # Real-time Projects
+│   │   │       ├── routes.py		 # Real-time Routes
+│   │   │       ├── websocket.py   # Real-time WebSocket
+│   │   │       └── workspaces.py  # Real-time WorkSpaces
 │   │   ├── 🏛  core/
-│   │   │   └── config.py                 ◄  Pydantic settings · env validation
+│   │   │   ├── auth.py 
+│   │   │   ├── config.py      
+│   │   │   ├── database.py
+│   │   │   ├── dependencies.py
+│   │   │   ├── events.py
+│   │   │   ├── kafka_client.py
+│   │   │   ├── logging.py
+│   │   │   ├── metrics.py
+│   │   │   ├── middleware.py
+│   │   │   ├── notifications.py
+│   │   │   ├── redis_client.py
+│   │   │   ├── security.py
+│   │   │   └── telemetry.py
 │   │   ├── 🗄  db/
-│   │   │   └── models.py                 ◄  SQLAlchemy · Event sourcing · Artifacts
-│   │   └── 🛡  middleware/
-│   │       ├── rate_limiter.py           ◄  Redis sliding-window · 1000 RPM
-│   │       └── audit.py                  ◄  Immutable audit log · append-only
+│   │   │   ├── models.py      # SQLAlchemy models
+│   │   │   └── session.py
+│   │   ├── 🛡  middleware/
+│   │   │   ├── logging.py
+│   │   │   ├── rate_limiter.py           ◄  Redis sliding-window · 1000 RPM
+│   │   │   └── audit.py                  ◄  Immutable audit log · append-only
+│   │   ├── schemas/
+│   │   │   ├── __init__.py
+│   │   │   ├── pipeline.py
+│   │   │   ├── user.py
+│   │   │   └── workspace.py
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth_service.py
+│   │   │   ├── pipeline_service.py
+│   │   │   └── workspace_service.py
+│   │   ├── workers/
+│   │   │   ├── __init__.py
+│   │   │   └── pipeline_worker.py
+│   │   └── main.py                       ◄  FastAPI entry · middleware · lifespan
+│   ├── migrations/
+│   │   ├── versions/
+│   │   │   ├── 
 │   ├── tests/
+│   │   ├── integration/
+│   │   │   └── test_pipeline_flow.py
 │   │   ├── unit/
-│   │   │   ├── test_routes.py            ◄  20+ API endpoint tests
-│   │   │   └── test_orchestrator.py      ◄  Agent logic · governance · artifacts
-│   │   └── integration/
-│   │       └── test_pipeline_flow.py     ◄  Full E2E pipeline flow
+│   │   │   ├── test_agents.py
+│   │   │   ├── test_artifacts.py
+│   │   │   ├── test_auth_service.py
+│   │   │   ├── test_middleware.py
+│   │   │   ├── test_orchestrator.py
+│   │   │   ├── test_pipeline_service.py
+│   │   │   ├── test_routes.py
+│   │   │   ├── test_security.py
+│   │   │   └── test_workspace_service.py
+│   │   └── conftest.py
 │   ├── pyproject.toml                    ◄  Ruff · mypy · pytest · 85% cov min
+│   ├── .env.example
+│   ├── alembic.ini
+│   ├── seed.py
 │   └── requirements.txt
 ├── 🏗  infrastructure/
 │   ├── docker/
+│   │   ├── monitoring/
+│   │   │   ├── Grafana/
+│   │   │   │   ├── dashboards/
+│   │   │   │   │   └── dashboards.yml
+│   │   │   │   └── datasources/
+│   │   │   │        └── datasources.yml
+│   │   │   └── Prometheus.yml
+│   │   ├── nginx/
+│   │   │   └── nginx.conf
+│   │   ├── postgres/
+│   │   │   ├── init.sql
+│   │   │   └── pg_hba.conf
+│   │   ├── nginx.conf
 │   │   ├── docker-compose.yml            ◄  Full stack · Postgres · Redis · Kafka
+│   │   ├── Dockerfile.frontend
 │   │   └── Dockerfile.backend            ◄  Multi-stage · non-root · slim
 │   ├── k8s/
+│   │   ├── configmap.yaml
+│   │   ├── hpa.yaml
+│   │   ├── ingress.yaml
+│   │   ├── namespace.yaml
+│   │   ├── networkpolicy.yaml
+│   │   ├── pdb.yaml
+│   │   ├── rbac.yaml
+│   │   ├── secrets.yaml
 │   │   └── deployment.yaml              ◄  HPA · PDB · NetworkPolicy · Ingress
-│   ├── helm/forge/
-│   │   ├── Chart.yaml
-│   │   └── values.yaml                  ◄  3→50 pods · autoscaling · TLS
+│   ├── helm/
+│   │   └── forge/          # Helm chart
+│   │       ├── templates/
+│   │       │   ├── _helpers.tpl
+│   │       │   ├── configmap.yaml
+│   │       │   ├── cronjob.yaml
+│   │       │   ├── deployment.yaml
+│   │       │   ├── hpa.yaml
+│   │       │   ├── ingress.yaml
+│   │       │   ├── NOTES.txt
+│   │       │   ├── secrets.yaml
+│   │       │   ├── service.yaml
+│   │       │   ├── serviceaccount.yaml
+│   │       │   └── servicemonitor.yaml
+│   │       ├── Chart.yaml
+│   │       ├── values.production.yaml
+│   │       ├── values.staging.yaml
+│   │       └── values.yaml                  ◄  3→50 pods · autoscaling · TLS
 │   └── monitoring/
+│       ├── Grafana/
+│       │   ├── dashboards/
+│       │   │   ├── 
+│       │   ├── datasources/
+│       │   │   ├── 
+│       │   ├── datasources.yaml
+│       │   └── forge-dashboard.json
+│       ├── alertmanager.yml
+│       ├── alerts.yml
 │       └── prometheus.yml               ◄  Metrics · alerts · Grafana-ready
 ├── 🔁 .github/
 │   ├── workflows/
@@ -150,26 +291,34 @@ forge/
 │   │   └── pr-checks.yml               ◄  Lint · typecheck · SAST · tests · build
 │   ├── ISSUE_TEMPLATE/
 │   │   ├── bug_report.md
+│   │   ├── config.yml
 │   │   └── feature_request.md
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── 📜 docs/
+│   ├── DEPLOYMENT.md
+│   ├── RUNBOOK.md
+│   ├── SECURITY.md
 │   ├── ARCHITECTURE.md                  ◄  System design · scaling · security
 │   ├── AGENTS.md                        ◄  All 15 agents · prompts · governance
 │   └── API.md                           ◄  Full endpoint reference · examples
 ├── ⚡ scripts/
+│   ├── backup.sh
+│   ├── restore.sh
 │   ├── setup.sh                         ◄  One-command dev setup
 │   ├── seed.py                          ◄  Demo workspaces · projects · users
 │   └── health_check.sh                  ◄  Verify all services are live
 ├── README.md
+├── Makefile
 ├── CONTRIBUTING.md
 ├── CHANGELOG.md
 ├── LICENSE                              ◄  Apache 2.0
 ├── .env.example                         ◄  All 30+ vars documented
 ├── .gitignore
+├── docker-compose.override.md
 └── docker-compose.yml                   ◄  Root shortcut
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  56 files  ·  5 layers  ·  React → FastAPI → Agents → Postgres → K8s
+  56 files  ·  6 layers  ·  React → FastAPI → Agents → Postgres → K8s
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -335,32 +484,32 @@ React → FastAPI → 15 Agents → Anthropic → Kafka → Postgres → Redis �
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-Key Decisions
+### Key Decisions
 
-- CQRS - writes go to primary DB, reads from replica
-- Event Sourcing - `EventStore` table is append-only; all state changes are events  
-- Hierarchical governance - each domain has Execute/Review/Approve; no stage skips
-- Immutable artifacts - once approved, artifacts are SHA-256 locked
-- HPA scaling - 3→50 backend pods, 5→100 worker pods based on CPU + Kafka lag
+- **CQRS** - writes go to primary DB, reads from replica
+- **Event Sourcing** - `EventStore` table is append-only; all state changes are events  
+- **Hierarchical governance** - each domain has Execute/Review/Approve; no stage skips
+- **Immutable artifacts** - once approved, artifacts are SHA-256 locked
+- **HPA scaling** - 3→50 backend pods, 5→100 worker pods based on CPU + Kafka lag
 
 ---
 
-Configuration
+## Configuration
 
 Copy `.env.example` to `.env` and fill in:
 
 ```env
-Required
+# Required
 ANTHROPIC_API_KEY=sk-ant-...
 
-Database
+# Database
 DATABASE_URL=postgresql+asyncpg://forge:secret@localhost:5432/forge
 REDIS_URL=redis://localhost:6379/0
 
-Kafka
+# Kafka
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 
-Auth
+# Auth
 JWT_SECRET=change-me-in-production
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
@@ -370,7 +519,7 @@ See `.env.example` for the full list.
 
 ---
 
-Demo Accounts
+## Demo Accounts
 
 | Email             | Password     | Role        |
 |-------------------|--------------|-------------|
@@ -380,26 +529,26 @@ Demo Accounts
 
 ---
 
-Deployment
+## Deployment
 
-Kubernetes (Production)
+### Kubernetes (Production)
 
 ```bash
-Create namespace and secrets
+# Create namespace and secrets
 kubectl create namespace forge
 kubectl create secret generic forge-secrets \
   --from-literal=anthropic-api-key=$ANTHROPIC_API_KEY \
   --from-literal=jwt-secret=$JWT_SECRET \
   -n forge
 
-Deploy
+# Deploy
 kubectl apply -f infrastructure/k8s/ -n forge
 
-Watch rollout
+# Watch rollout
 kubectl rollout status deployment/forge-backend -n forge
 ```
 
-Helm
+### Helm
 
 ```bash
 helm upgrade --install forge infrastructure/helm/forge \
@@ -408,14 +557,14 @@ helm upgrade --install forge infrastructure/helm/forge \
   --set image.tag=latest
 ```
 
-GitHub Actions CI/CD
+### GitHub Actions CI/CD
 
 Push to `develop` → staging deployment  
 Create a release tag → blue-green production deployment with health checks and auto-rollback
 
 ---
 
-Contributing
+## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -426,6 +575,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
-License
+## License
 
 MIT - see [LICENSE](LICENSE)
