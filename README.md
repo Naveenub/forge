@@ -97,225 +97,181 @@ npm run dev
 
 ```
 forge/
-├── 🖥  frontend/                         ◄  React 18 + Vite Dashboard
-│   ├── src/
-│   │   ├── App.jsx                       # Main dashboard (all views)
-│   │   ├── main.jsx
-│   │   ├── test-setup.js
-│   │   ├── components/                   # Shared UI components
-│   │   │   ├── AgentCard.jsx
-│   │   │   ├── ApprovalCard.jsx
-│   │   │   ├── ArtifactViewer.jsx
-│   │   │   ├── Avatar.jsx
-│   │   │   ├── Button.jsx
-│   │   │   ├── Dropdown.jsx
-│   │   │   ├── EmptyState.jsx
-│   │   │   ├── ErrorBoundary.jsx
-│   │   │   ├── Input.jsx
-│   │   │   ├── LoadingSpinner.jsx
-│   │   │   ├── LogStream.jsx
-│   │   │   ├── MetricCard.jsx
-│   │   │   ├── Modal.jsx
-│   │   │   ├── Navbar.jsx
-│   │   │   ├── PipelineCard.jsx
-│   │   │   ├── Sidebar.jsx
-│   │   │   ├── Skeleton.jsx
-│   │   │   ├── StatusBadge.jsx
-│   │   │   ├── Table.jsx
-│   │   │   ├── Toast.jsx
-│   │   │   └── WorkspaceCard.jsx
-│   │   ├── hooks/                        # Custom React hooks
-│   │   │   ├── useAgents.js
-│   │   │   ├── useArtifacts.js
-│   │   │   ├── useAuth.js
-│   │   │   ├── useMetrics.js
-│   │   │   ├── usePipeline.js
-│   │   │   ├── useUtils.js
-│   │   │   ├── useWebSocket.js
-│   │   │   └── useWorkspace.js
-│   │   └── utils/                        # Helpers & constants
-│   │        ├── api.js
-│   │        ├── constants.js
-│   │        ├── errors.js
-│   │        ├── formatters.js
-│   │        ├── storage.js
-│   │        └── validators.js
+├── .github/
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug_report.md
+│   │   ├── feature_request.md
+│   │   └── config.yml
+│   ├── workflows/
+│   │   ├── deploy.yml              # CD: build → push → helm upgrade
+│   │   └── pr-checks.yml           # CI: lint, test, scan, build
+│   └── PULL_REQUEST_TEMPLATE.md
+├── backend/
+│   ├── app/
+│   │   ├── agents/
+│   │   │   ├── orchestrator.py     # 15 Claude AI agent classes (exec/review/approval)
+│   │   │   └── pipeline_engine.py  # PipelineStateMachine, stage runner, artifact saver
+│   │   ├── api/v1/
+│   │   │   ├── auth.py             # /auth — login, refresh, API keys
+│   │   │   ├── workspaces.py       # /workspaces — CRUD
+│   │   │   ├── projects.py         # /projects — CRUD + pipeline trigger
+│   │   │   ├── pipelines.py        # /pipelines — status, cancel, retry, approve
+│   │   │   ├── agents.py           # /agents — live agent status
+│   │   │   ├── artifacts.py        # /artifacts — download, list
+│   │   │   ├── websocket.py        # /ws — real-time pipeline events
+│   │   │   ├── health.py           # /health — liveness + readiness
+│   │   │   └── routes.py           # legacy stub routes
+│   │   ├── core/
+│   │   │   ├── config.py           # Pydantic settings (env-driven)
+│   │   │   ├── security.py         # JWT encode/decode, bcrypt hashing
+│   │   │   ├── auth.py             # FastAPI Depends: CurrentUserID, RequireRole
+│   │   │   ├── database.py         # Async engine, read/write session factories
+│   │   │   ├── redis_client.py     # Redis pool, get/set helpers
+│   │   │   ├── kafka_client.py     # AIOKafka producer + consumer factory
+│   │   │   ├── events.py           # In-process EventBus (pub/sub for WebSocket)
+│   │   │   ├── logging.py          # structlog JSON logger, request_id injection
+│   │   │   ├── metrics.py          # Prometheus counters/histograms/gauges
+│   │   │   ├── telemetry.py        # OpenTelemetry tracer setup (optional)
+│   │   │   ├── middleware.py       # Re-exports: RateLimit, Audit, Security
+│   │   │   └── notifications.py    # Slack + SMTP fire-and-forget notifications
+│   │   ├── db/
+│   │   │   ├── models.py           # All ORM models: User, Workspace, Project,
+│   │   │   │                       #   Pipeline, PipelineStage, Artifact,
+│   │   │   │                       #   ApprovalRequest, AuditLog, ApiKey, EventStore
+│   │   │   └── session.py          # write_session() async context manager
+│   │   ├── middleware/
+│   │   │   ├── audit.py            # AuditMiddleware — logs every mutating request
+│   │   │   ├── logging.py          # RequestLoggingMiddleware — access log + JWT decode
+│   │   │   └── rate_limiter.py     # RateLimitMiddleware — Redis sliding window
+│   │   ├── schemas/
+│   │   │   ├── user.py             # UserRead, TokenResponse, ApiKeyRead/Created
+│   │   │   ├── pipeline.py         # PipelineCreate/Read/List, ApprovalRead/Action
+│   │   │   └── workspace.py        # WorkspaceCreate/Read, ProjectCreate/Read
+│   │   ├── services/
+│   │   │   ├── auth_service.py     # AuthService: login, refresh, API key CRUD
+│   │   │   ├── pipeline_service.py # PipelineService: create, cancel, approve, reject
+│   │   │   └── workspace_service.py# WorkspaceService + ProjectService CRUD
+│   │   ├── workers/
+│   │   │   └── pipeline_worker.py  # Kafka consumer → PipelineStateMachine runner
+│   │   └── main.py                 # FastAPI app factory, middleware stack, routers
+│   ├── alembic/                    # Alembic migration runtime (env.py + script.py.mako)
+│   │   └── versions/
+│   │       └── 001_initial_schema.py
+│   ├── migrations/                 # Standalone migration copy (CI-friendly)
+│   │   └── versions/
+│   │       └── 001_initial_schema.py
+│   ├── tests/
+│   │   ├── conftest.py             # Async SQLite fixtures, mock services
+│   │   ├── unit/                   # 9 unit test modules
+│   │   │   ├── test_auth_service.py
+│   │   │   ├── test_pipeline_service.py
+│   │   │   ├── test_workspace_service.py
+│   │   │   ├── test_orchestrator.py
+│   │   │   ├── test_agents.py
+│   │   │   ├── test_artifacts.py
+│   │   │   ├── test_middleware.py
+│   │   │   ├── test_routes.py
+│   │   │   └── test_security.py
+│   │   └── integration/
+│   │       └── test_pipeline_flow.py
+│   ├── pyproject.toml              # ruff, mypy, pytest, coverage config
+│   ├── requirements.txt
+│   └── requirements-dev.txt
+├── frontend/
 │   ├── public/
-│   │   ├── 404.html
 │   │   ├── favicon.svg
 │   │   ├── manifest.json
-│   │   └── robots.txt
-│   ├── .eslintrc.cjs
-│   ├── index.html
+│   │   ├── robots.txt
+│   │   └── 404.html
+│   ├── src/
+│   │   ├── components/             # 21 UI components
+│   │   │   ├── AgentCard.jsx       ├── ApprovalCard.jsx
+│   │   │   ├── ArtifactViewer.jsx  ├── Avatar.jsx
+│   │   │   ├── Button.jsx          ├── Dropdown.jsx
+│   │   │   ├── EmptyState.jsx      ├── ErrorBoundary.jsx
+│   │   │   ├── Input.jsx           ├── LoadingSpinner.jsx
+│   │   │   ├── LogStream.jsx       ├── MetricCard.jsx
+│   │   │   ├── Modal.jsx           ├── Navbar.jsx
+│   │   │   ├── PipelineCard.jsx    ├── Sidebar.jsx
+│   │   │   ├── Skeleton.jsx        ├── StatusBadge.jsx
+│   │   │   ├── Table.jsx           ├── Toast.jsx
+│   │   │   └── WorkspaceCard.jsx
+│   │   ├── hooks/                  # 8 custom hooks
+│   │   │   ├── useAgents.js        ├── useArtifacts.js
+│   │   │   ├── useAuth.js          ├── useMetrics.js
+│   │   │   ├── usePipeline.js      ├── useUtils.js
+│   │   │   ├── useWebSocket.js     └── useWorkspace.js
+│   │   ├── utils/                  # 7 utilities
+│   │   │   ├── api.js              ├── constants.js
+│   │   │   ├── errors.js           ├── formatters.js
+│   │   │   ├── storage.js          ├── validators.js
+│   │   │   └── formatters.test.js
+│   │   ├── App.jsx
+│   │   └── main.jsx
 │   ├── package.json
 │   ├── vite.config.js
 │   └── vitest.config.js
-├── ⚙️  backend/                           ◄  FastAPI · Async · CQRS
-│   ├── alembic/
-│   │   ├── versions/
-│   │   │   └── 001_initial_schema.py
-│   │   ├── env.py
-│   │   └── script.py.mako
-│   ├── app/
-│   │   ├── 🤖 agents/                    ◄  THE ENGINE
-│   │   │   ├── orchestrator.py           ◄  15 Claude agents · 5 domain hierarchy
-│   │   │   └── pipeline_engine.py        ◄  State machine · Execute→Review→Approve
-│   │   ├── 🔌 api/
-│   │   │   └── v1/ 
-│   │   │       ├── agents.py      # Real-time Agents
-│   │   │       ├── artifacts.py   # Real-time Artifacts
-│   │   │       ├── auth.py		 # Real-time Auth
-│   │   │       ├── health.py		 # Real-time Health
-│   │   │       ├── pipelines.py	 # Real-time Pipelines
-│   │   │       ├── projects.py	 # Real-time Projects
-│   │   │       ├── routes.py		 # Real-time Routes
-│   │   │       ├── websocket.py   # Real-time WebSocket
-│   │   │       └── workspaces.py  # Real-time WorkSpaces
-│   │   ├── 🏛  core/
-│   │   │   ├── auth.py 
-│   │   │   ├── config.py      
-│   │   │   ├── database.py
-│   │   │   ├── dependencies.py
-│   │   │   ├── events.py
-│   │   │   ├── kafka_client.py
-│   │   │   ├── logging.py
-│   │   │   ├── metrics.py
-│   │   │   ├── middleware.py
-│   │   │   ├── notifications.py
-│   │   │   ├── redis_client.py
-│   │   │   ├── security.py
-│   │   │   └── telemetry.py
-│   │   ├── 🗄  db/
-│   │   │   ├── models.py      # SQLAlchemy models
-│   │   │   └── session.py
-│   │   ├── 🛡  middleware/
-│   │   │   ├── logging.py
-│   │   │   ├── rate_limiter.py           ◄  Redis sliding-window · 1000 RPM
-│   │   │   └── audit.py                  ◄  Immutable audit log · append-only
-│   │   ├── schemas/
-│   │   │   ├── __init__.py
-│   │   │   ├── pipeline.py
-│   │   │   ├── user.py
-│   │   │   └── workspace.py
-│   │   ├── services/
-│   │   │   ├── __init__.py
-│   │   │   ├── auth_service.py
-│   │   │   ├── pipeline_service.py
-│   │   │   └── workspace_service.py
-│   │   ├── workers/
-│   │   │   ├── __init__.py
-│   │   │   └── pipeline_worker.py
-│   │   └── main.py                       ◄  FastAPI entry · middleware · lifespan
-│   ├── migrations/
-│   │   ├── versions/
-│   │   │   ├── 
-│   ├── tests/
-│   │   ├── integration/
-│   │   │   └── test_pipeline_flow.py
-│   │   ├── unit/
-│   │   │   ├── test_agents.py
-│   │   │   ├── test_artifacts.py
-│   │   │   ├── test_auth_service.py
-│   │   │   ├── test_middleware.py
-│   │   │   ├── test_orchestrator.py
-│   │   │   ├── test_pipeline_service.py
-│   │   │   ├── test_routes.py
-│   │   │   ├── test_security.py
-│   │   │   └── test_workspace_service.py
-│   │   └── conftest.py
-│   ├── pyproject.toml                    ◄  Ruff · mypy · pytest · 85% cov min
-│   ├── .env.example
-│   ├── alembic.ini
-│   ├── seed.py
-│   └── requirements.txt
-├── 🏗  infrastructure/
+├── infrastructure/
 │   ├── docker/
-│   │   ├── monitoring/
-│   │   │   ├── Grafana/
-│   │   │   │   ├── dashboards/
-│   │   │   │   │   └── dashboards.yml
-│   │   │   │   └── datasources/
-│   │   │   │        └── datasources.yml
-│   │   │   └── Prometheus.yml
-│   │   ├── nginx/
-│   │   │   └── nginx.conf
+│   │   ├── Dockerfile.backend
+│   │   ├── Dockerfile.frontend
+│   │   ├── nginx.conf
+│   │   ├── nginx/nginx.conf
 │   │   ├── postgres/
 │   │   │   ├── init.sql
 │   │   │   └── pg_hba.conf
-│   │   ├── nginx.conf
-│   │   ├── docker-compose.yml            ◄  Full stack · Postgres · Redis · Kafka
-│   │   ├── Dockerfile.frontend
-│   │   └── Dockerfile.backend            ◄  Multi-stage · non-root · slim
-│   ├── k8s/
-│   │   ├── configmap.yaml
-│   │   ├── hpa.yaml
-│   │   ├── ingress.yaml
-│   │   ├── namespace.yaml
-│   │   ├── networkpolicy.yaml
-│   │   ├── pdb.yaml
-│   │   ├── rbac.yaml
-│   │   ├── secrets.yaml
-│   │   └── deployment.yaml              ◄  HPA · PDB · NetworkPolicy · Ingress
-│   ├── helm/
-│   │   └── forge/          # Helm chart
-│   │       ├── templates/
-│   │       │   ├── _helpers.tpl
-│   │       │   ├── configmap.yaml
-│   │       │   ├── cronjob.yaml
-│   │       │   ├── deployment.yaml
-│   │       │   ├── hpa.yaml
-│   │       │   ├── ingress.yaml
-│   │       │   ├── NOTES.txt
-│   │       │   ├── secrets.yaml
-│   │       │   ├── service.yaml
-│   │       │   ├── serviceaccount.yaml
-│   │       │   └── servicemonitor.yaml
-│   │       ├── Chart.yaml
-│   │       ├── values.production.yaml
-│   │       ├── values.staging.yaml
-│   │       └── values.yaml                  ◄  3→50 pods · autoscaling · TLS
+│   │   └── monitoring/
+│   │       ├── prometheus.yml
+│   │       └── grafana/
+│   │           ├── dashboards/dashboards.yml
+│   │           └── datasources/datasources.yml
+│   ├── helm/forge/                 # Helm chart
+│   │   ├── Chart.yaml
+│   │   ├── values.yaml
+│   │   ├── values.staging.yaml
+│   │   ├── values.production.yaml
+│   │   └── templates/
+│   │       ├── deployment.yaml     ├── service.yaml
+│   │       ├── ingress.yaml        ├── configmap.yaml
+│   │       ├── secrets.yaml        ├── hpa.yaml
+│   │       ├── cronjob.yaml        ├── serviceaccount.yaml
+│   │       ├── servicemonitor.yaml ├── _helpers.tpl
+│   │       └── NOTES.txt
+│   ├── k8s/                        # Raw Kubernetes manifests
+│   │   ├── namespace.yaml          ├── deployment.yaml
+│   │   ├── configmap.yaml          ├── secrets.yaml
+│   │   ├── ingress.yaml            ├── hpa.yaml
+│   │   ├── networkpolicy.yaml      ├── pdb.yaml
+│   │   └── rbac.yaml
 │   └── monitoring/
-│       ├── Grafana/
-│       │   ├── dashboards/
-│       │   │   ├── 
-│       │   ├── datasources/
-│       │   │   ├── 
-│       │   ├── datasources.yaml
-│       │   └── forge-dashboard.json
+│       ├── prometheus.yml
 │       ├── alertmanager.yml
 │       ├── alerts.yml
-│       └── prometheus.yml               ◄  Metrics · alerts · Grafana-ready
-├── 🔁 .github/
-│   ├── workflows/
-│   │   ├── deploy.yml                   ◄  Blue-green · health check · rollback
-│   │   └── pr-checks.yml               ◄  Lint · typecheck · SAST · tests · build
-│   ├── ISSUE_TEMPLATE/
-│   │   ├── bug_report.md
-│   │   ├── config.yml
-│   │   └── feature_request.md
-│   └── PULL_REQUEST_TEMPLATE.md
-├── 📜 docs/
+│       └── grafana/
+│           ├── forge-dashboard.json
+│           ├── datasources.yml
+│           ├── dashboards/dashboards.yml
+│           └── datasources/datasources.yml
+├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── API.md
+│   ├── AGENTS.md
 │   ├── DEPLOYMENT.md
 │   ├── RUNBOOK.md
-│   ├── SECURITY.md
-│   ├── ARCHITECTURE.md                  ◄  System design · scaling · security
-│   ├── AGENTS.md                        ◄  All 15 agents · prompts · governance
-│   └── API.md                           ◄  Full endpoint reference · examples
-├── ⚡ scripts/
+│   └── SECURITY.md
+├── scripts/
+│   ├── setup.sh
+│   ├── seed.py
 │   ├── backup.sh
 │   ├── restore.sh
-│   ├── setup.sh                         ◄  One-command dev setup
-│   ├── seed.py                          ◄  Demo workspaces · projects · users
-│   └── health_check.sh                  ◄  Verify all services are live
-├── README.md
+│   └── health_check.sh
+├── docker-compose.yml
+├── docker-compose.override.yml
 ├── Makefile
-├── CONTRIBUTING.md
+├── README.md
 ├── CHANGELOG.md
-├── LICENSE                              ◄  Apache 2.0
-├── .env.example                         ◄  All 30+ vars documented
-├── .gitignore
-├── docker-compose.override.md
-└── docker-compose.yml                   ◄  Root shortcut
+├── CONTRIBUTING.md
+└── LICENSE
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   56 files  ·  6 layers  ·  React → FastAPI → Agents → Postgres → K8s
@@ -331,157 +287,155 @@ forge/
 ⬡  F O R G E  ─  SYSTEM ARCHITECTURE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-BROWSER LAYER
-┌────────────────────────────────────────────────────────────────────────────┐
-│  ⬡ FORGE DASHBOARD  (React 18 + Vite)                                      │
-│                                                                            │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
-│  │   PIPELINE   │  │  ARTIFACTS   │  │   MONITOR    │  │   SETTINGS   │    │
-│  │──────────────│  │──────────────│  │──────────────│  │──────────────│    │
-│  │ Agent Tree   │  │ Code Viewer  │  │ Live Metrics │  │ Agent Config │    │
-│  │ Log Stream   │  │ SHA Locks    │  │ SLA / HPA    │  │ Governance   │    │
-│  │ Approvals    │  │ Download     │  │ DB Stats     │  │ 5-Tab Panel  │    │
-│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘    │
-│                                                                            │
-│  Account  ·  Profile  ·  2FA  ·  API Keys  ·  Audit Log                    │
-└───────────────────────────────────┬────────────────────────────────────────┘
-                                    │
-                                    │  HTTPS (REST) + WSS (WebSocket)
-                                    ▼
-INGRESS LAYER
-┌───────────────────────────────────────────────────────────────────────────────┐
-│  NGINX INGRESS                                                                │
-│  ───────────────────────────────────────────────────────────────────────────  │
-│  TLS Termination · Rate Limiting · Route/api → backend · Route/ws → websocket │
-└───────────────────────────────────┬───────────────────────────────────────────┘
-                                    │
-                                    ▼
-API LAYER  (FastAPI · Python 3.11 · Async · 3 → 50 Pods via HPA)
-┌───────────────────────────────────────────────────────────────────┐
-│  REST ENDPOINTS:                                                  │
-│    /api/v1/workspaces                                             │
-│    /api/v1/projects                                               │
-│    /api/v1/pipelines                                              │
-│    /api/v1/agents                                                 │
-│    /api/v1/artifacts                                              │
-│    /api/v1/approvals                                              │
-│    /api/v1/metrics                                                │
-│                                                                   │
-│  WEBSOCKET:                                                       │
-│    /ws/{pipeline_id}                                              │
-│      • Agent log fan-out                                          │
-│      • Pipeline state streaming                                   │
-│      • Approval push notifications                                │
-│                                                                   │
-│  MIDDLEWARE STACK:                                                │
-│    JWT Auth  →  Redis Rate Limiter (1000 RPM)  →  Audit Logger    │
-└─────────────────────────────────┬─────────────────────────────────┘
-                                  │
-                                  ▼
-AGENT ORCHESTRATOR  ─  THE ENGINE
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  REQUIREMENTS  ───────────────────────────────────────────────►  PRODUCTION │
-│                                                                             │
-│  ARCHITECTURE DOMAIN                                                        │
-│    ① Architect                                                              │
-│    ② Sr. Architect                                                          │
-│    ③ Architecture Approval                                                  │
-│       → Schema · API Contracts · Blueprint Lock                             │
-│                                                                             │
-│  DEVELOPMENT DOMAIN                                                         │
-│    ④ Developer                                                              │
-│    ⑤ Sr. Developer                                                          │
-│    ⑥ Development Manager                                                    │
-│       → Code Gen · Review · Release Tag                                     │
-│                                                                             │
-│  TESTING DOMAIN                                                             │
-│    ⑦ Tester                                                                 │
-│    ⑧ Sr. Tester                                                             │
-│    ⑨ QA Manager                                                             │
-│       → Unit + Integration · Coverage Gate · QA Clearance                   │
-│                                                                             │
-│  SECURITY DOMAIN                                                            │
-│    ⑩ Security Engineer                                                      │
-│    ⑪ Sr. Security Engineer                                                  │
-│    ⑫ Security Manager                                                       │
-│       → OWASP · SAST · Dependency Scan · Prod Clearance                     │
-│                                                                             │
-│  DEVOPS DOMAIN  (Optional Per Project)                                      │
-│    ⑬ Cloud Engineer                                                         │
-│    ⑭ Cloud Lead                                                             │
-│    ⑮ Cloud Manager                                                          │
-│       → Docker · K8s · Helm · CI/CD · Blue-Green · Rollback                 │
-│                                                                             │
-│  Every agent invokes:  Claude Opus 4.6  via  Anthropic API                  │
-└───────────────────────┬──────────────────────────┬──────────────────────────┘
-                        │                          │
-                        ▼                          ▼
-                  EXTERNAL AI                 EVENT STREAM
-            ┌────────────────────┐   ┌────────────────────────────┐
-            │  ANTHROPIC API     │   │  KAFKA CLUSTER (3 Brokers) │
-            │────────────────────│   │────────────────────────────│
-            │  claude-opus-4-6   │   │  pipeline.events           │
-            │  8192 tokens       │   │  agent.logs                │
-            │  300s timeout      │   │  governance.approvals      │
-            └─────────┬──────────┘   └─────────────┬──────────────┘
-                      │                            │
-                      └──────────────┬─────────────┘
-                                     ▼
-DATA LAYER
-┌─────────────────────────┬─────────────────────────┬──────────────────────────┐
-│ POSTGRESQL              │ REDIS                   │ OBJECT STORAGE           │
-│─────────────────────────│─────────────────────────│──────────────────────────│
-│ Primary (Writes)        │ Session Cache           │ Artifact Blobs           │
-│ Replica (Reads)         │ Rate Limit Counters     │ SHA-256 Locked           │
-│ pipelines               │ WS Connections          │ Immutable After Approval │
-│ artifacts (locked)      │ Pipeline State (TTL)    │ Pre-Signed URLs          │
-│ audit_events            │                         │                          │
-│ event_store (append)    │                         │                          │
-│ workspaces              │                         │                          │
-│ projects                │                         │                          │
-│ approvals               │                         │                          │
-└─────────────────────────┴─────────────────────────┴──────────────────────────┘
-                                     │
-                                     ▼
-OBSERVABILITY & CI/CD
-┌─────────────────────────┬─────────────────────────┬──────────────────────────┐
-│ PROMETHEUS              │ GRAFANA                 │ GITHUB ACTIONS           │
-│─────────────────────────│─────────────────────────│──────────────────────────│
-│ /metrics scrape         │ Pipeline Dashboards     │ PR: Lint + Typecheck     │
-│ HPA triggers            │ Agent Performance       │     SAST + Tests         │
-│ Kafka lag alerts        │ SLA / Uptime            │     Build Validation     │
-│ p99 latency             │ Kafka Lag View          │ Push: Blue-Green Deploy  │
-│ Error rate              │ DB Pool Metrics         │      Health + Rollback   │
-└─────────────────────────┴─────────────────────────┴──────────────────────────┘
-                                     │
-                                     ▼
-GOVERNANCE FLOW
-┌────────────────────────────────────────────────────────────────────┐
-|   DROP REQUIREMENTS                                                |
-|           │                                                        |
-|           ▼                                                        |
-|        EXECUTE                                                     |
-|           │                                                        |
-|           ▼                                                        |
-|         REVIEW                                                     |
-|           │                                                        |
-|           ▼                                                        |
-|        APPROVE ────────┬────────► REJECT                           |
-|           │            │                                           |
-|           │            └────► PIPELINE HALTED → HUMAN DECISION     |
-|           ▼                                                        |
-|      NEXT DOMAIN                                                   |
-|           │                                                        |
-|           ▼                                                        |
-|     ARTIFACT LOCKED (SHA-256 · Immutable · 90-Day Audit Trail)     |
-|           │                                                        |
-|           ▼                                                        |
-|   DEPLOY TO PRODUCTION ✓                                           |
-└────────────────────────────────────────────────────────────────────┘
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║                              FORGE  —  AI SDLC Platform                          ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-React → FastAPI → 15 Agents → Anthropic → Kafka → Postgres → Redis → K8s HA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Browser / API Client
+  ┌──────────────────────────────────────────┐
+  │  React SPA  (Vite + JSX)                 │
+  │                                          │
+  │  hooks/         components/   utils/     │
+  │  useAuth        AgentCard     api.js     │
+  │  usePipeline    PipelineCard  ws.js      │
+  │  useWebSocket   ArtifactView  formatters │
+  └──────────┬──────────────┬────────────────┘
+             │ HTTPS/REST   │ WSS
+             ▼              ▼
+  ┌───────────────────────────────────────────────────────────────────────┐
+  │                        NGINX  (reverse proxy / TLS)                   │
+  │          /api/*  →  backend:8000      /*  →  frontend:3000            │
+  └──────────────────────┬────────────────────────────────────────────────┘
+                         │
+  ┌──────────────────────▼────────────────────────────────────────────────┐
+  │                   FastAPI  Application  (Uvicorn / Python 3.12)       │
+  │                                                                       │
+  │  Middleware Stack (innermost → outermost)                             │
+  │  ┌──────────────────────────────────────────────────────────────┐     │
+  │  │       SecurityMiddleware  →  RateLimitMiddleware  →          │     │
+  │  │       AuditMiddleware     →  RequestLoggingMiddleware        │     │
+  │  └──────────────────────────────────────────────────────────────┘     │
+  │                                                                       │
+  │  API Routers  /api/v1/                                                │
+  │  ┌──────────┐ ┌────────────┐ ┌──────────┐ ┌─────────┐ ┌───────────┐   │
+  │  │  /auth   │ │/workspaces │ │/projects │ │/pipeline│ │ /agents   │   │
+  │  │  /apikey │ │  /members  │ │          │ │/approve │ │/artifacts │   │
+  │  └──────────┘ └────────────┘ └──────────┘ └─────────┘ └───────────┘   │
+  │  ┌──────────┐ ┌───────────┐                                           │
+  │  │ /health  │ │    /ws    │  ← WebSocket: EventBus broadcasts         │
+  │  └──────────┘ └───────────┘                                           │
+  │                                                                       │
+  │  Service Layer                                                        │
+  │  ┌───────────────┐  ┌──────────────────┐  ┌──────────────────────┐    │
+  │  │  AuthService  │  │ PipelineService  │  │  WorkspaceService    │    │
+  │  │  login        │  │  create/cancel   │  │  ProjectService      │    │
+  │  │  refresh      │  │  approve/reject  │  │  CRUD + membership   │    │
+  │  │  api_key CRUD │  │  list/get        │  │                      │    │
+  │  └───────────────┘  └──────────────────┘  └──────────────────────┘    │
+  └──────────────────────────────────┬────────────────────────────────────┘
+                                     │
+          ┌──────────────────────────┼─────────────────────────────┐
+          │                          │                             │
+          ▼                          ▼                             ▼
+  ┌──────────────┐         ┌───────────────────┐         ┌─────────────────┐
+  │  PostgreSQL  │         │     Redis         │         │     Kafka       │
+  │  (asyncpg)   │         │  (redis-py async) │         │   (aiokafka)    │
+  │              │         │                   │         │                 │
+  │  users       │         │  • Rate limiting  │         │  pipeline.run   │
+  │  workspaces  │         │  • Session cache  │         │  pipeline.event │
+  │  projects    │         │  • WS heartbeat   │         │  agent.result   │
+  │  pipelines   │         │  • API key cache  │         │                 │
+  │  stages      │         └───────────────────┘         └────────┬────────┘
+  │  artifacts   │                                                │
+  │  approvals   │                                                │ consume
+  │  audit_logs  │                  ┌─────────────────────────────▼──────────┐
+  │  api_keys    │                  │         Pipeline  Worker               │
+  │  event_store │                  │                                        │
+  └──────────────┘                  │  Kafka consumer → PipelineStateMachine |
+                                    │                                        │
+                                    │  ┌───────────────────────────────┐     │
+                                    │  │    AI  Agent  Pipeline        │     │
+                                    │  │                               │     │
+                                    │  │  ┌────────────────────────┐   │     │
+                                    │  │  │  ARCHITECTURE  Domain  │   │     │
+                                    │  │  │  [Exec] → [Review] →   |   |     |
+                                    |  |  |       [Approve]│       |   |     |
+                                    │  │  ├────────────────────────┤   │     │
+                                    │  │  │  DEVELOPMENT  Domain   │   │     │
+                                    │  │  │  [Exec] → [Review] →   |   |     |
+                                    |  |  |      [Approve]         │   |     |
+                                    │  │  ├────────────────────────┤   │     │
+                                    │  │  │  TESTING  Domain       │   │     │
+                                    │  │  │  [Exec] → [Review] →   |   |     |
+                                    |  |  |      [Approve]         │   |     |
+                                    │  │  ├────────────────────────┤   │     │
+                                    │  │  │  SECURITY  Domain      │   │     │
+                                    │  │  │  [Exec] → [Review] →   |   |     |
+                                    |  |  |       [Approve]        │   |     |
+                                    │  │  ├────────────────────────┤   │     │
+                                    │  │  │  DEVOPS  Domain (opt)  │   │     │
+                                    │  │  │  [Exec] → [Review] →   |   |     |
+                                    |  |  |       [Approve]        │   |     |
+                                    │  │  └────────────────────────┘   │     │
+                                    │  │         ↓ each agent calls    │     │
+                                    │  │    anthropic.messages.create  │     │
+                                    │  └───────────────────────────────┘     │
+                                    └────────────────────────────────────────┘
+
+  ┌───────────────────────────────────────────────────────────────────────────┐
+  │                     APPROVAL  GATE  (human-in-the-loop)                   │
+  │                                                                           │
+  │  Agent auto-approves → OK → next stage                                    │
+  │  Agent rejects      → HTTPException → ApprovalRequest created             │
+  │                        → Slack / Email notification                       │
+  │                        → Human reviews via /api/v1/pipelines/{id}/approve │
+  │                        → Pipeline resumes or terminates                   │
+  └───────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                          OBSERVABILITY  STACK                            │
+  │                                                                          │
+  │  FastAPI app                Prometheus              Grafana              │
+  │  ┌─────────────┐             ┌───────────┐            ┌──────────┐       │
+  │  │ /metrics    │ ──scrape──▶│ TSDB       │──query───▶│Dashboard │       │
+  │  │ structlog   │             │ alerts    │            │Alerts    │       │
+  │  │ OTel traces │             └───────────┘            └──────────┘       │
+  │  └─────────────┘                 ↓                                       │
+  │                          Alertmanager                                    │
+  │                          (Slack/PD)                                      │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │                          DEPLOYMENT  TARGETS                             │
+  │                                                                          │
+  │  Local Dev          Staging / Prod (K8s)       CI/CD                     │
+  │  ┌────────────┐     ┌──────────────────────┐   ┌───────────────────────┐ │
+  │  │docker-     │     │ Helm Chart           │   │ GitHub Actions        │ │
+  │  │compose.yml │     │ ├── deployment.yaml  │   │ pr-checks.yml         │ │
+  │  │            │     │ ├── hpa.yaml         │   │  ruff / mypy / pytest │ │
+  │  │postgres    │     │ ├── ingress.yaml     │   │  docker build         │ │
+  │  │redis       │     │ ├── servicemonitor   │   │  trivy scan           │ │
+  │  │kafka       │     │ └── configmap.yaml   │   │ deploy.yml            │ │
+  │  │backend     │     │                      │   │  helm upgrade         │ │
+  │  │frontend    │     │ values.yaml          │   │  --atomic             │ │
+  │  │prometheus  │     │ values.staging.yaml  │   └───────────────────────┘ │
+  │  │grafana     │     │ values.production    │                             │
+  │  └────────────┘     └──────────────────────┘                             │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  Data Flow Summary
+  ─────────────────
+  User triggers pipeline
+    → POST /api/v1/projects/{id}/pipelines
+    → PipelineService.create() saves Pipeline row
+    → Kafka message published: pipeline.run
+    → Pipeline Worker consumes message
+    → PipelineStateMachine.run() iterates 15 stages
+    → Each stage: AI agent calls Claude API → result saved as Artifact
+    → Approval agents vote; human gate created if rejected
+    → EventBus publishes stage updates → WebSocket → browser
+    → On completion: all artifacts immutable, pipeline.status = COMPLETED
+
 ```
 
 ### Key Decisions
