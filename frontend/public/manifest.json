@@ -1,0 +1,23 @@
+{
+  "name": "Autonomous Forge",
+  "short_name": "Forge",
+  "description": "Multi-Agent Hierarchical SDLC Automation Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#05070f",
+  "theme_color": "#00d4ff",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["developer tools", "productivity", "utilities"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
+}

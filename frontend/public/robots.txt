@@ -1,0 +1,12 @@
+User-agent: *
+# Block auth and API routes from indexing
+Disallow: /api/
+Disallow: /ws/
+Disallow: /login
+Disallow: /reset-password
+Disallow: /invite
+
+# Allow public marketing pages if any
+Allow: /
+
+Sitemap: https://forge.your-domain.com/sitemap.xml
