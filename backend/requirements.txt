@@ -1,41 +1,43 @@
-# ─── Core Framework ───────────────────────────────────────────
+# ─── Core Framework ─────────────────────────────
 fastapi==0.110.0
 uvicorn[standard]==0.27.1
 python-multipart==0.0.9
 
-# ─── Database ─────────────────────────────────────────────────
+# ─── Database ───────────────────────────────────
 sqlalchemy[asyncio]==2.0.27
 asyncpg==0.29.0
 alembic==1.13.1
 
-# ─── Caching ──────────────────────────────────────────────────
+# ─── Caching ────────────────────────────────────
 redis[hiredis]==5.0.1
 
-# ─── Queue / Streaming (only if you actually use it)
+# ─── Queue / Streaming (only if used) ──────────
 aiokafka==0.10.0
 confluent-kafka==2.3.0
 
-# ─── Auth / Security ─────────────────────────────────────────
+# ─── Authentication & Security ─────────────────
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 pyotp==2.9.0
+cryptography==42.0.2
 
-# ─── Configuration ───────────────────────────────────────────
+# ─── Configuration ─────────────────────────────
 pydantic==2.6.1
 pydantic-settings==2.2.0
 python-dotenv==1.0.1
 
-# ─── HTTP Client ─────────────────────────────────────────────
+# ─── HTTP Client ───────────────────────────────
 httpx==0.26.0
 
-# ─── Monitoring (if used in prod)
+# ─── Monitoring ────────────────────────────────
 prometheus-client==0.20.0
 prometheus-fastapi-instrumentator==6.1.0
 
-# ─── Logging / Utilities ─────────────────────────────────────
+# ─── Logging / Utilities ───────────────────────
 structlog==24.1.0
 orjson==3.9.13
+arrow==1.3.0
 tenacity==8.2.3
 
-# ─── AI (if needed)
+# ─── AI (if used in production) ────────────────
 anthropic==0.20.0
