@@ -55,7 +55,7 @@ Requirements → Architecture  →  Development  →  Testing   →  Security  �
 ### 1. Clone & configure
 
 ```bash
-git clone https://github.com/your-org/forge.git
+git clone https://github.com/Naveenub/forge.git
 cd forge
 cp .env.example .env
 Edit .env and add your ANTHROPIC_API_KEY
