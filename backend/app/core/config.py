@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     ENCRYPTION_KEY: str = secrets.token_urlsafe(32)
 
     # Server
-    HOST: str = "0.0.0.0"  # noqa: S104
+    HOST: str = "0.0.0.0"  # noqa: S104  # nosec B104
     PORT: int = 8000
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "https://your-domain.com"]
     ALLOWED_HOSTS: list[str] = ["*"]
