@@ -154,9 +154,7 @@ class PipelineStateMachine:
         for attempt in range(max_retries):
             try:
                 # Create and run the appropriate agent
-                agent = create_agent(  # type: ignore[arg-type]
-                    stage.stage_type, self.pipeline_id, str(stage.id)
-                )
+                agent = create_agent(stage.stage_type, self.pipeline_id, str(stage.id))  # type: ignore[arg-type]  # noqa: E501
                 output = await agent.execute(self.context)
 
                 # Store output and update context
