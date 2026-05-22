@@ -31,6 +31,33 @@ export const PIPELINE_STATUSES = [
 // ── Domains ───────────────────────────────────────────────────────────────────
 export const DOMAINS = ['architecture', 'development', 'testing', 'security', 'devops'];
 
+export const DOMAIN_COLORS = {
+  architecture: '#6366f1',
+  development:  '#3b82f6',
+  testing:      '#10b981',
+  security:     '#f59e0b',
+  devops:       '#ef4444',
+};
+
+export const PIPELINE_STAGES = [
+  'requirements_gathering',
+  'architecture_design',
+  'architecture_review',
+  'architecture_approval',
+  'development_planning',
+  'implementation',
+  'code_review',
+  'dev_approval',
+  'unit_testing',
+  'integration_testing',
+  'test_review',
+  'test_approval',
+  'security_scan',
+  'security_review',
+  'deployment',
+  'post_deployment_validation',
+];
+
 export const AGENTS_BY_DOMAIN = {
   architecture: ['Architect', 'Sr. Architect', 'Arch Approve'],
   development:  ['Developer', 'Sr. Developer', 'Dev Manager'],
