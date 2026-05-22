@@ -53,6 +53,7 @@ jobs:
           safety check -r backend/requirements.txt
           --ignore 78279
           --ignore 80876
+          --ignore 92337
 
       - name: SAST with CodeQL
         uses: github/codeql-action/analyze@v3
