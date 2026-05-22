@@ -48,7 +48,7 @@ async def list_agents(
 
     agents = []
     for domain, level, name in _AGENT_CATALOG:
-        stage = running_stages.get((domain, level))
+        stage = running_stages.get((domain, level))  # type: ignore[arg-type]
         agents.append({
             "id":           f"{domain.value}-{level.value}",
             "name":         name,

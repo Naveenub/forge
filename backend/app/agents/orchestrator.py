@@ -95,11 +95,13 @@ class BaseAgent(ABC):
                     system=self.system_prompt,
                     messages=[{"role": "user", "content": prompt}],
                 )
-                return message.content[0].text
+                block = message.content[0]
+                return block.text  # type: ignore[union-attr]
             except Exception:
                 if attempt == max_retries - 1:
                     raise
                 await asyncio.sleep(2 ** attempt)  # Exponential backoff
+        raise RuntimeError("Max retries exceeded")  # unreachable but satisfies type checker
 
     @abstractmethod
     def _build_prompt(self, context: dict[str, Any]) -> str:
@@ -762,4 +764,4 @@ def create_agent(stage_type: StageType, pipeline_id: str, stage_id: str) -> Base
     agent_class = AGENT_REGISTRY.get(stage_type)
     if not agent_class:
         raise ValueError(f"No agent registered for stage type: {stage_type}")
-    return agent_class(pipeline_id=pipeline_id, stage_id=stage_id)
+    return agent_class(pipeline_id=pipeline_id, stage_id=stage_id)  # type: ignore[abstract]

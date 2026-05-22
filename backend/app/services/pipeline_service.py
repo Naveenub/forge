@@ -78,8 +78,8 @@ class PipelineService:
                     " — only pending/running/waiting can be cancelled"
                 ),
             )
-        pipeline.status = PipelineStatus.FAILED
-        pipeline.completed_at = datetime.now(UTC)
+        pipeline.status = PipelineStatus.FAILED  # type: ignore[assignment]
+        pipeline.completed_at = datetime.now(UTC)  # type: ignore[assignment]
         await self.db.commit()
         await self.db.refresh(pipeline)
         return pipeline
@@ -91,10 +91,10 @@ class PipelineService:
                 status_code=400,
                 detail="Only failed or rejected pipelines can be retried",
             )
-        pipeline.status = PipelineStatus.PENDING
-        pipeline.current_stage = None
-        pipeline.started_at = None
-        pipeline.completed_at = None
+        pipeline.status = PipelineStatus.PENDING  # type: ignore[assignment]
+        pipeline.current_stage = None  # type: ignore[assignment]
+        pipeline.started_at = None  # type: ignore[assignment]
+        pipeline.completed_at = None  # type: ignore[assignment]
         await self.db.commit()
         await self.db.refresh(pipeline)
         asyncio.create_task(self._start_orchestrator(str(pipeline.id)))
@@ -139,17 +139,17 @@ class PipelineService:
         if approval.status != "pending":
             raise HTTPException(status_code=400, detail="Approval already decided")
 
-        approval.status     = decision
-        approval.decision   = decision
-        approval.decided_by = decided_by
-        approval.decided_at = datetime.now(UTC)
-        approval.notes      = comment
+        approval.status     = decision  # type: ignore[assignment]
+        approval.decision   = decision  # type: ignore[assignment]
+        approval.decided_by = decided_by  # type: ignore[assignment]
+        approval.decided_at = datetime.now(UTC)  # type: ignore[assignment]
+        approval.notes      = comment  # type: ignore[assignment]
 
         if decision == "rejected":
             pipeline = await self.db.get(Pipeline, approval.pipeline_id)
             if pipeline:
-                pipeline.status = PipelineStatus.REJECTED
-                pipeline.completed_at = datetime.now(UTC)
+                pipeline.status = PipelineStatus.REJECTED  # type: ignore[assignment]
+                pipeline.completed_at = datetime.now(UTC)  # type: ignore[assignment]
 
         await self.db.commit()
         await self.db.refresh(approval)

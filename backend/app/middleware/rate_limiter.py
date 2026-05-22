@@ -23,11 +23,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Limit: settings.RATE_LIMIT_RPM requests per user per window
     """
 
-    def __init__(self, app: Callable, redis_client: aioredis.Redis) -> None:
+    def __init__(
+        self,
+        app: Callable,
+        redis_client: aioredis.Redis | None = None,
+        requests_per_minute: int | None = None,
+    ) -> None:
         super().__init__(app)
         self.redis = redis_client
         self.window = 60  # seconds
-        self.limit = settings.RATE_LIMIT_RPM
+        self.limit = requests_per_minute if requests_per_minute is not None else settings.RATE_LIMIT_RPM
 
     async def dispatch(self, request: Request, call_next: Callable):  # type: ignore[override]
         # Skip rate limiting for health checks and docs

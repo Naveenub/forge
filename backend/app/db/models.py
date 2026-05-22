@@ -129,7 +129,7 @@ class User(Base):
     username        = Column(String(100), unique=True, nullable=False)
     name            = Column(String(255), nullable=False, default="")
     hashed_password = Column(String(255), nullable=False)
-    role            = Column(SQLEnum(UserRole), nullable=False, default=UserRole.CONTRIBUTOR)
+    role            = Column(SQLEnum(UserRole), nullable=False, default=UserRole.CONTRIBUTOR)  # type: ignore[var-annotated]
     avatar          = Column(String(4), nullable=True)   # 2-char initials, e.g. "JD"
     is_active       = Column(Boolean, default=True)
     is_verified     = Column(Boolean, default=False)
@@ -201,7 +201,7 @@ class WorkspaceMember(Base):
     user_id      = Column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    role         = Column(SQLEnum(UserRole), nullable=False, default=UserRole.CONTRIBUTOR)
+    role         = Column(SQLEnum(UserRole), nullable=False, default=UserRole.CONTRIBUTOR)  # type: ignore[var-annotated]
     invited_by   = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     joined_at    = Column(DateTime, default=datetime.utcnow)
 
@@ -251,8 +251,8 @@ class Pipeline(Base):
         UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
     version       = Column(Integer, default=1, nullable=False)
-    status        = Column(SQLEnum(PipelineStatus), default=PipelineStatus.PENDING, nullable=False)
-    current_stage = Column(SQLEnum(StageType), nullable=True)
+    status        = Column(SQLEnum(PipelineStatus), default=PipelineStatus.PENDING, nullable=False)  # type: ignore[var-annotated]
+    current_stage = Column(SQLEnum(StageType), nullable=True)  # type: ignore[var-annotated]
     started_at    = Column(DateTime, nullable=True)
     completed_at  = Column(DateTime, nullable=True)
     triggered_by  = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
@@ -278,10 +278,10 @@ class PipelineStage(Base):
     pipeline_id     = Column(
         UUID(as_uuid=True), ForeignKey("pipelines.id", ondelete="CASCADE"), nullable=False
     )
-    stage_type      = Column(SQLEnum(StageType), nullable=False)
-    agent_domain    = Column(SQLEnum(AgentDomain), nullable=False)
-    agent_level     = Column(SQLEnum(AgentLevel), nullable=False)
-    status          = Column(SQLEnum(PipelineStatus), default=PipelineStatus.PENDING)
+    stage_type      = Column(SQLEnum(StageType), nullable=False)  # type: ignore[var-annotated]
+    agent_domain    = Column(SQLEnum(AgentDomain), nullable=False)  # type: ignore[var-annotated]
+    agent_level     = Column(SQLEnum(AgentLevel), nullable=False)  # type: ignore[var-annotated]
+    status          = Column(SQLEnum(PipelineStatus), default=PipelineStatus.PENDING)  # type: ignore[var-annotated]
     order           = Column(Integer, nullable=False)
     started_at      = Column(DateTime, nullable=True)
     completed_at    = Column(DateTime, nullable=True)
@@ -306,7 +306,7 @@ class Artifact(Base):
         UUID(as_uuid=True), ForeignKey("pipelines.id", ondelete="CASCADE"), nullable=False
     )
     stage_id      = Column(UUID(as_uuid=True), ForeignKey("pipeline_stages.id"), nullable=False)
-    artifact_type = Column(SQLEnum(ArtifactType), nullable=False)
+    artifact_type = Column(SQLEnum(ArtifactType), nullable=False)  # type: ignore[var-annotated]
     name          = Column(String(255), nullable=False)
     content       = Column(Text, nullable=True)
     file_path     = Column(String(500), nullable=True)
@@ -333,7 +333,7 @@ class ApprovalRequest(Base):
     stage_id          = Column(UUID(as_uuid=True), ForeignKey("pipeline_stages.id"), nullable=False)
     pipeline_id       = Column(UUID(as_uuid=True), ForeignKey("pipelines.id"), nullable=False)
     requested_by      = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    required_role     = Column(SQLEnum(UserRole), nullable=False, default=UserRole.MANAGER)
+    required_role     = Column(SQLEnum(UserRole), nullable=False, default=UserRole.MANAGER)  # type: ignore[var-annotated]
     status            = Column(String(50), default="pending")     # pending | approved | rejected
     decision          = Column(String(50), nullable=True)
     decided_by        = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
@@ -355,7 +355,7 @@ class AuditLog(Base):
 
     id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id       = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    action        = Column(SQLEnum(AuditAction), nullable=False)
+    action        = Column(SQLEnum(AuditAction), nullable=False)  # type: ignore[var-annotated]
     resource_type = Column(String(100), nullable=False)
     resource_id   = Column(String(255), nullable=True)
     workspace_id  = Column(UUID(as_uuid=True), nullable=True)

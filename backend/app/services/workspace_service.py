@@ -29,7 +29,7 @@ class WorkspaceService:
 
     # ── public ────────────────────────────────────────────────────────────────
 
-    async def list(self, owner_id: str | UUID) -> list[Workspace]:
+    async def list_all(self, owner_id: str | UUID) -> list[Workspace]:
         result = await self.db.execute(
             select(Workspace)
             .join(WorkspaceMember, WorkspaceMember.workspace_id == Workspace.id, isouter=True)
@@ -88,7 +88,7 @@ class WorkspaceService:
     # ── backward-compat aliases ───────────────────────────────────────────────
 
     async def list_workspaces(self, owner_id: str | UUID) -> list[Workspace]:
-        return await self.list(owner_id)
+        return await self.list_all(owner_id)
 
     async def get_workspace(self, workspace_id: str | UUID) -> Workspace:
         return await self.get(workspace_id)

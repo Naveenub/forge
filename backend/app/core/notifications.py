@@ -118,6 +118,33 @@ class NotificationService:
         except Exception as exc:
             logger.warning("Email send failed (to=%s): %s", to, exc)
 
+
+    async def send_rejection_alert(
+        self,
+        pipeline_id: str,
+        stage_type: str,
+        reason: str | None = None,
+    ) -> None:
+        """Fire-and-forget alert when an approval agent rejects a stage."""
+        text = (
+            f":x: *Stage Rejected* — pipeline `{pipeline_id}`\n"
+            f"Stage: {stage_type}  •  Reason: {reason or 'none'}"
+        )
+        await self._slack_post(settings.SLACK_CHANNEL_APPROVALS, text)
+
+    async def send_failure_alert(
+        self,
+        pipeline_id: str,
+        stage_type: str,
+        error: str,
+    ) -> None:
+        """Fire-and-forget alert on unhandled stage exception."""
+        text = (
+            f":fire: *Stage Failed* — pipeline `{pipeline_id}`\n"
+            f"Stage: {stage_type}  •  Error: {error[:300]}"
+        )
+        await self._slack_post(settings.SLACK_CHANNEL_APPROVALS, text)
+
     async def email_approval_request(
         self, to: str, project_name: str, domain: str, approval_url: str
     ) -> None:

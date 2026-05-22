@@ -129,7 +129,7 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
         path = _get_route_path(request)
         method = request.method
 
-        _http_requests_in_progress.labels(method=method, endpoint=path).inc()
+        _http_requests_in_progress.labels(method=method, endpoint=path).inc()  # type: ignore[union-attr]
         start = time.perf_counter()
         status_code = 500
 
@@ -141,13 +141,13 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
             raise
         finally:
             duration = time.perf_counter() - start
-            _http_requests_total.labels(
+            _http_requests_total.labels(  # type: ignore[union-attr]
                 method=method, endpoint=path, status=str(status_code)
             ).inc()
-            _http_request_duration_seconds.labels(
+            _http_request_duration_seconds.labels(  # type: ignore[union-attr]
                 method=method, endpoint=path
             ).observe(duration)
-            _http_requests_in_progress.labels(method=method, endpoint=path).dec()
+            _http_requests_in_progress.labels(method=method, endpoint=path).dec()  # type: ignore[union-attr]
 
 
 # ─────────────────────────────────────────────────────────────────────────────

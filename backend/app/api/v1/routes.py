@@ -247,7 +247,7 @@ async def get_artifact(artifact_id: str, db: AsyncSession = Depends(get_db)) -> 
 @router.get("/artifacts/{artifact_id}/download", tags=["artifacts"])
 async def download_artifact(artifact_id: str, db: AsyncSession = Depends(get_db)) -> dict[str, str]:
     """Returns a pre-signed URL for artifact download."""
-    return {"url": f"https://artifacts.forge.internal/{artifact_id}", "expires_in": 3600}
+    return {"url": f"https://artifacts.forge.internal/{artifact_id}", "expires_in": "3600"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

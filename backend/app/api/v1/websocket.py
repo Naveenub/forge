@@ -74,7 +74,7 @@ async def pipeline_websocket(
 
     # Subscribe to pipeline events
     event_bus = EventBus.get_instance()
-    queue = asyncio.Queue()
+    queue: asyncio.Queue[PipelineEvent] = asyncio.Queue()
 
     async def event_handler(event: PipelineEvent):
         if event.pipeline_id == pipeline_id:

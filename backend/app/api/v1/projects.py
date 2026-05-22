@@ -17,13 +17,13 @@ router = APIRouter()
 
 def _to_read(p: Project, pipeline_count: int = 0) -> ProjectRead:
     return ProjectRead(
-        id=p.id,
-        workspace_id=p.workspace_id,
-        name=p.name,
-        description=p.description,
-        tech_stack=p.tech_stack or [],
+        id=p.id,  # type: ignore[arg-type]
+        workspace_id=p.workspace_id,  # type: ignore[arg-type]
+        name=p.name,  # type: ignore[arg-type]
+        description=p.description,  # type: ignore[arg-type]
+        tech_stack=p.tech_stack or [],  # type: ignore[arg-type]
         pipeline_count=pipeline_count,
-        created_at=p.created_at,
+        created_at=p.created_at,  # type: ignore[arg-type]
     )
 
 
@@ -93,9 +93,9 @@ async def update_project(
     proj = result.scalar_one_or_none()
     if not proj:
         raise HTTPException(status_code=404, detail="Not found")
-    proj.name = payload.name
-    proj.description = payload.description
-    proj.tech_stack = payload.tech_stack or proj.tech_stack
+    proj.name = payload.name  # type: ignore[assignment]
+    proj.description = payload.description  # type: ignore[assignment]
+    proj.tech_stack = payload.tech_stack or proj.tech_stack  # type: ignore[assignment]
     await db.commit()
     await db.refresh(proj)
     return _to_read(proj)

@@ -41,7 +41,7 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_write_db))
     )
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(payload.password, user.hashed_password):
+    if not user or not verify_password(payload.password, user.hashed_password):  # type: ignore[arg-type]
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     await db.execute(
@@ -126,9 +126,9 @@ async def change_password(
 ):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    if not user or not verify_password(payload.current_password, user.hashed_password):
+    if not user or not verify_password(payload.current_password, user.hashed_password):  # type: ignore[arg-type]
         raise HTTPException(status_code=400, detail="Current password is incorrect")
-    user.hashed_password = hash_password(payload.new_password)
+    user.hashed_password = hash_password(payload.new_password)  # type: ignore[assignment]
     await db.commit()
 
 

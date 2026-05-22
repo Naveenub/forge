@@ -37,7 +37,7 @@ class AuthService:
         """Validate credentials and return JWT pair."""
         user = await self._get_user_by_email(email)
 
-        if not user or not verify_password(password, user.hashed_password):
+        if not user or not verify_password(password, user.hashed_password):  # type: ignore[arg-type]
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials",

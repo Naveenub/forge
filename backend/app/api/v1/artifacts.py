@@ -56,7 +56,7 @@ async def download_artifact(
     if artifact.content:
         # Text artifact — stream directly
         content_bytes = artifact.content.encode()
-        media_type = _media_type(artifact.artifact_type)
+        media_type = _media_type(artifact.artifact_type)  # type: ignore[arg-type]
         return StreamingResponse(
             iter([content_bytes]),
             media_type=media_type,
@@ -89,7 +89,7 @@ async def lock_artifact(
     if artifact.is_immutable:
         raise HTTPException(status_code=400, detail="Artifact is already locked")
 
-    artifact.is_immutable = True
+    artifact.is_immutable = True  # type: ignore[assignment]
     await db.commit()
     await db.refresh(artifact)
     return ArtifactRead.model_validate(artifact)

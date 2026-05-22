@@ -38,11 +38,11 @@ async def list_workspaces(
             select(func.count()).where(Project.workspace_id == ws.id)
         )
         out.append(WorkspaceRead(
-            id=ws.id,
-            name=ws.name,
-            description=ws.description,
-            owner_id=ws.owner_id,
-            created_at=ws.created_at,
+            id=ws.id,  # type: ignore[arg-type]
+            name=ws.name,  # type: ignore[arg-type]
+            description=ws.description,  # type: ignore[arg-type]
+            owner_id=ws.owner_id,  # type: ignore[arg-type]
+            created_at=ws.created_at,  # type: ignore[arg-type]
             project_count=count_result.scalar_one(),
         ))
     return out
@@ -65,8 +65,8 @@ async def create_workspace(
     await db.commit()
     await db.refresh(ws)
     return WorkspaceRead(
-        id=ws.id, name=ws.name, description=ws.description,
-        owner_id=ws.owner_id, created_at=ws.created_at, project_count=0,
+        id=ws.id, name=ws.name, description=ws.description,  # type: ignore[arg-type]
+        owner_id=ws.owner_id, created_at=ws.created_at, project_count=0,  # type: ignore[arg-type]
     )
 
 
@@ -82,8 +82,8 @@ async def get_workspace(
         raise HTTPException(status_code=404, detail="Workspace not found")
     count_result = await db.execute(select(func.count()).where(Project.workspace_id == ws.id))
     return WorkspaceRead(
-        id=ws.id, name=ws.name, description=ws.description,
-        owner_id=ws.owner_id, created_at=ws.created_at,
+        id=ws.id, name=ws.name, description=ws.description,  # type: ignore[arg-type]
+        owner_id=ws.owner_id, created_at=ws.created_at,  # type: ignore[arg-type]
         project_count=count_result.scalar_one(),
     )
 
@@ -101,13 +101,13 @@ async def update_workspace(
         raise HTTPException(status_code=404, detail="Not found")
     if ws.owner_id != user_id:
         raise HTTPException(status_code=403, detail="Only the owner can update this workspace")
-    ws.name = payload.name
-    ws.description = payload.description
+    ws.name = payload.name  # type: ignore[assignment]
+    ws.description = payload.description  # type: ignore[assignment]
     await db.commit()
     await db.refresh(ws)
     return WorkspaceRead(
-        id=ws.id, name=ws.name, description=ws.description,
-        owner_id=ws.owner_id, created_at=ws.created_at, project_count=0,
+        id=ws.id, name=ws.name, description=ws.description,  # type: ignore[arg-type]
+        owner_id=ws.owner_id, created_at=ws.created_at, project_count=0,  # type: ignore[arg-type]
     )
 
 
