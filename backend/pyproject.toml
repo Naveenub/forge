@@ -26,6 +26,7 @@ plugins = ["pydantic.mypy"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 filterwarnings = ["ignore::DeprecationWarning"]
+pythonpath = ["."]
 
 [tool.coverage.run]
 source = ["app"]
