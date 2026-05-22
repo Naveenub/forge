@@ -1,80 +1,43 @@
-"""SQLAlchemy async session factory."""
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+"""SQLAlchemy async session factory — delegates to core.database engines.
 
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+Engines are created lazily by core.database.init_db() during app lifespan,
+so no connection is attempted at import time.
+"""
+from __future__ import annotations
+
+from collections.abc import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
-from app.core.config import settings
-
-# ── Engines ───────────────────────────────────────────────────────────────────
-
-engine_write = create_async_engine(
-    settings.DATABASE_URL,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,
-    echo=settings.DEBUG,
-)
-
-engine_read = create_async_engine(
-    settings.DATABASE_URL_REPLICA or settings.DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,
-    echo=False,
-)
-
-
-# ── Session factories ─────────────────────────────────────────────────────────
-
-AsyncWriteSession = async_sessionmaker(
-    engine_write,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
-)
-
-AsyncReadSession = async_sessionmaker(
-    engine_read,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
-)
-
-
-# ── Base ──────────────────────────────────────────────────────────────────────
 
 class Base(DeclarativeBase):
     pass
 
 
-# ── Dependency helpers ────────────────────────────────────────────────────────
-
-@asynccontextmanager
-async def get_write_session() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncWriteSession() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
+def _get_write_session_factory():
+    from app.core.database import _WriteSession  # noqa: PLC0415
+    if _WriteSession is None:
+        raise RuntimeError(
+            "Database not initialised — ensure init_db() ran in app lifespan before "
+            "the first request reaches a DB dependency."
+        )
+    return _WriteSession
 
 
-@asynccontextmanager
-async def get_read_session() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncReadSession() as session:
-        yield session
+def _get_read_session_factory():
+    from app.core.database import _ReadSession  # noqa: PLC0415
+    if _ReadSession is None:
+        raise RuntimeError(
+            "Database not initialised — ensure init_db() ran in app lifespan before "
+            "the first request reaches a DB dependency."
+        )
+    return _ReadSession
 
 
 async def write_session_dep() -> AsyncGenerator[AsyncSession, None]:
-    """FastAPI dependency — write (primary) DB."""
-    async with AsyncWriteSession() as session:
+    """FastAPI dependency — write (primary) DB session."""
+    async with _get_write_session_factory()() as session:
         try:
             yield session
             await session.commit()
@@ -84,6 +47,6 @@ async def write_session_dep() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def read_session_dep() -> AsyncGenerator[AsyncSession, None]:
-    """FastAPI dependency — read (replica) DB."""
-    async with AsyncReadSession() as session:
+    """FastAPI dependency — read (replica) DB session."""
+    async with _get_read_session_factory()() as session:
         yield session
