@@ -9,7 +9,7 @@ import { describe, it, expect } from "vitest";
 
 describe("formatters", () => {
   describe("formatBytes", () => {
-    it("formats bytes correctly", () => {
+    it("formats bytes correctly", async () => {
       const { formatBytes } = await import("../utils/formatters.js");
       expect(formatBytes(0)).toBe("0 B");
       expect(formatBytes(1024)).toBe("1.0 KB");
