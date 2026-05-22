@@ -154,7 +154,9 @@ class PipelineStateMachine:
         for attempt in range(max_retries):
             try:
                 # Create and run the appropriate agent
-                agent = create_agent(stage.stage_type, self.pipeline_id, str(stage.id))  # type: ignore[arg-type]
+                agent = create_agent(  # type: ignore[arg-type]
+                    stage.stage_type, self.pipeline_id, str(stage.id)
+                )
                 output = await agent.execute(self.context)
 
                 # Store output and update context
@@ -172,10 +174,10 @@ class PipelineStateMachine:
                         await self.db.commit()
 
                         # Notify for human intervention on rejection
-                        await self.notifications.send_rejection_alert(  # type: ignore[attr-defined]
+                        await self.notifications.send_rejection_alert(
                             pipeline_id=self.pipeline_id,
-                            stage_type=stage.stage_type,
-                            reason=stage.rejection_reason
+                            stage_type=str(stage.stage_type),
+                            reason=str(stage.rejection_reason) if stage.rejection_reason else None,
                         )
                         logger.warning(
                             "Stage %s rejected: %s", stage.stage_type, stage.rejection_reason
@@ -244,7 +246,7 @@ class PipelineStateMachine:
             StageType.SECURITY: ArtifactType.SECURITY_REPORT,
             StageType.DEVOPS: ArtifactType.DOCKERFILE,
         }
-        artifact_type = artifact_type_mapping.get(stage.stage_type)  # type: ignore[arg-type]
+        artifact_type = artifact_type_mapping.get(stage.stage_type)  # type: ignore[call-overload]
         if not artifact_type:
             return
 
@@ -267,7 +269,7 @@ class PipelineStateMachine:
 
     async def _transition_pipeline(self, new_status: PipelineStatus, pipeline: Pipeline) -> None:
         """Validate and apply state transition"""
-        valid_next = self.VALID_TRANSITIONS.get(pipeline.status, [])  # type: ignore[arg-type]
+        valid_next = self.VALID_TRANSITIONS.get(pipeline.status, [])  # type: ignore[call-overload]
         if new_status not in valid_next:
             raise ValueError(f"Invalid transition: {pipeline.status} → {new_status}")
         pipeline.status = new_status  # type: ignore[assignment]
@@ -292,10 +294,10 @@ class PipelineStateMachine:
         stage.status = PipelineStatus.FAILED  # type: ignore[assignment]
         pipeline.status = PipelineStatus.FAILED  # type: ignore[assignment]
         await self.db.commit()
-        await self.notifications.send_failure_alert(  # type: ignore[attr-defined]
+        await self.notifications.send_failure_alert(
             pipeline_id=self.pipeline_id,
-            stage_type=stage.stage_type,
-            error=error
+            stage_type=str(stage.stage_type),
+            error=error,
         )
 
 
