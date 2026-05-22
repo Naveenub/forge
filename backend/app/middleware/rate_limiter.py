@@ -32,7 +32,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.redis = redis_client
         self.window = 60  # seconds
-        self.limit = requests_per_minute if requests_per_minute is not None else settings.RATE_LIMIT_RPM
+        self.limit = (
+            requests_per_minute if requests_per_minute is not None else settings.RATE_LIMIT_RPM
+        )
 
     async def dispatch(self, request: Request, call_next: Callable):  # type: ignore[override]
         # Skip rate limiting for health checks and docs
