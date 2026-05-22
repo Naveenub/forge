@@ -6,6 +6,7 @@ so no connection is attempted at import time.
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
@@ -48,5 +49,26 @@ async def write_session_dep() -> AsyncGenerator[AsyncSession, None]:
 
 async def read_session_dep() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency — read (replica) DB session."""
+    async with _get_read_session_factory()() as session:
+        yield session
+
+
+# ── Context manager helpers (for non-FastAPI callers e.g. health checks) ─────
+
+@asynccontextmanager
+async def get_write_session() -> AsyncGenerator[AsyncSession, None]:
+    """Async context manager — write (primary) DB session."""
+    async with _get_write_session_factory()() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
+
+@asynccontextmanager
+async def get_read_session() -> AsyncGenerator[AsyncSession, None]:
+    """Async context manager — read (replica) DB session."""
     async with _get_read_session_factory()() as session:
         yield session
