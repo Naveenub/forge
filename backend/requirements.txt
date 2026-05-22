@@ -1,12 +1,12 @@
 # ── Web framework ─────────────────────────────────────────────────────────────
-fastapi==0.116.0
+fastapi==0.115.12
 uvicorn[standard]==0.32.1
 gunicorn==23.0.0
 httptools==0.6.4
 uvloop==0.21.0
 
 # ── ASGI / HTTP ───────────────────────────────────────────────────────────────
-starlette==0.49.1
+# starlette pinned by fastapi
 python-multipart==0.0.26
 
 # ── Database ──────────────────────────────────────────────────────────────────
