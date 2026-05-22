@@ -26,15 +26,15 @@ export function formatRelative(iso) {
   return formatDate(iso);
 }
 
-export function formatDuration(ms) {
-  if (!ms && ms !== 0) return '—';
-  const s = Math.floor(ms / 1000);
+export function formatDuration(seconds) {
+  if (!seconds && seconds !== 0) return '—';
+  const s = Math.floor(seconds);
   if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);
   const rem = s % 60;
   if (m < 60) return `${m}m ${rem}s`;
   const h = Math.floor(m / 60);
-  return `${h}h ${m % 60}m`;
+  return `${h}h ${m % 60}m ${rem}s`;
 }
 
 // ── Numbers ───────────────────────────────────────────────────────────────────
