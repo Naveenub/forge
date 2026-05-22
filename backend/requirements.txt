@@ -7,7 +7,7 @@ uvloop==0.21.0
 
 # ── ASGI / HTTP ───────────────────────────────────────────────────────────────
 # starlette pinned by fastapi
-python-multipart==0.0.26
+python-multipart==0.0.27
 
 # ── Database ──────────────────────────────────────────────────────────────────
 sqlalchemy[asyncio]==2.0.36
