@@ -35,6 +35,13 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    env:
+      # SQLite in-memory — no Postgres needed for unit tests
+      DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+      DATABASE_URL_REPLICA: "sqlite+aiosqlite:///:memory:"
+      SECRET_KEY: "ci-test-secret-key-not-for-production"
+      ANTHROPIC_API_KEY: "test-key"
+      DEBUG: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,7 +49,7 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest pytest-asyncio pytest-cov
+        run: pip install -r requirements.txt pytest pytest-asyncio pytest-cov aiosqlite
       - name: Run unit tests
         run: |
           pytest tests/unit/ -v \
