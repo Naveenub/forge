@@ -45,6 +45,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         now = time.time()
         window_start = now - self.window
 
+        if self.redis is None:
+            return await call_next(request)
+
         pipe = self.redis.pipeline()
         pipe.zremrangebyscore(key, "-inf", window_start)
         pipe.zadd(key, {str(now): now})
