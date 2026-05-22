@@ -123,7 +123,10 @@ async def create_workspace(
 
 
 @router.delete(
-    "/workspaces/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, tags=["workspaces"]
+    "/workspaces/{workspace_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+    tags=["workspaces"],
 )
 async def delete_workspace(workspace_id: str, db: AsyncSession = Depends(get_db)) -> None:
     """Delete a workspace and all its projects."""
@@ -167,7 +170,12 @@ async def get_project(project_id: str, db: AsyncSession = Depends(get_db)) -> Pr
     raise HTTPException(status_code=404, detail="Project not found")
 
 
-@router.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None, tags=["projects"])
+@router.delete(
+    "/projects/{project_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+    tags=["projects"],
+)
 async def delete_project(project_id: str, db: AsyncSession = Depends(get_db)) -> None:
     pass
 
