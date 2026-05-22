@@ -21,7 +21,14 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from app.db.models import Base
+# ── Ensure env vars are set before any app module is imported ─────────────────
+# These are required by app.core.config at import time.
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+os.environ.setdefault("DATABASE_URL_REPLICA", "sqlite+aiosqlite:///:memory:")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
+os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+
+from app.db.models import Base  # noqa: E402  (must come after env setup)
 
 
 # ── Event loop ────────────────────────────────────────────────────────────────
@@ -58,15 +65,18 @@ async def db(engine) -> AsyncGenerator[AsyncSession, None]:
 
 @pytest.fixture
 def app(db) -> FastAPI:
-    """Return the FastAPI app with overridden DB dependency."""
+    """Return the FastAPI app with overridden DB dependencies."""
     from app.main import app as _app
-    from app.core.database import get_write_db, get_read_db
+    # Override the dependency callables that routes actually use (from dependencies.py).
+    # These are imported as write_session_dep / read_session_dep from app.db.session,
+    # then re-exported as WriteDB / ReadDB via Annotated[..., Depends(...)].
+    from app.db.session import write_session_dep, read_session_dep
 
     async def override_db():
         yield db
 
-    _app.dependency_overrides[get_write_db] = override_db
-    _app.dependency_overrides[get_read_db]  = override_db
+    _app.dependency_overrides[write_session_dep] = override_db
+    _app.dependency_overrides[read_session_dep] = override_db
     yield _app
     _app.dependency_overrides.clear()
 
