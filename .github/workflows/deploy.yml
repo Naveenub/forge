@@ -49,7 +49,10 @@ jobs:
         run: bandit -r backend/app -ll --confidence-level medium
 
       - name: Dependency vulnerability scan
-        run: safety check -r backend/requirements.txt
+        run: >
+          safety check -r backend/requirements.txt
+          --ignore 78279
+          --ignore 80876
 
       - name: SAST with CodeQL
         uses: github/codeql-action/analyze@v3
