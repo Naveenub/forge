@@ -25,6 +25,10 @@ jobs:
   quality:
     name: Code Quality & Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -54,6 +58,11 @@ jobs:
           --ignore 78279
           --ignore 80876
           --ignore 92337
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python, javascript
 
       - name: SAST with CodeQL
         uses: github/codeql-action/analyze@v3
