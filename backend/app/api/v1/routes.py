@@ -5,6 +5,7 @@ Covers: workspaces, projects, pipelines, artifacts, approvals, agents, metrics
 from __future__ import annotations
 
 import uuid
+from collections.abc import AsyncGenerator
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -13,9 +14,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.session import write_session_dep as _write_session_dep
-
-
-from collections.abc import AsyncGenerator
 
 
 async def get_db() -> AsyncGenerator[AsyncSession | None, None]:
