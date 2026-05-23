@@ -39,25 +39,6 @@ export const DOMAIN_COLORS = {
   devops:       '#ef4444',
 };
 
-export const PIPELINE_STAGES = [
-  'requirements_gathering',
-  'architecture_design',
-  'architecture_review',
-  'architecture_approval',
-  'development_planning',
-  'implementation',
-  'code_review',
-  'dev_approval',
-  'unit_testing',
-  'integration_testing',
-  'test_review',
-  'test_approval',
-  'security_scan',
-  'security_review',
-  'deployment',
-  'post_deployment_validation',
-];
-
 export const AGENTS_BY_DOMAIN = {
   architecture: ['Architect', 'Sr. Architect', 'Arch Approve'],
   development:  ['Developer', 'Sr. Developer', 'Dev Manager'],
@@ -65,6 +46,24 @@ export const AGENTS_BY_DOMAIN = {
   security:     ['Sec Engineer', 'Sr. Security', 'Sec Manager'],
   devops:       ['Cloud Engineer', 'Cloud Lead', 'Cloud Manager'],
 };
+
+export const PIPELINE_STAGES = [
+  { id: 'arch_design',      domain: 'architecture', label: 'Architecture Design',   level: 'junior'  },
+  { id: 'arch_review',      domain: 'architecture', label: 'Architecture Review',   level: 'senior'  },
+  { id: 'arch_approve',     domain: 'architecture', label: 'Architecture Approval', level: 'manager' },
+  { id: 'dev_implement',    domain: 'development',  label: 'Implementation',        level: 'junior'  },
+  { id: 'dev_review',       domain: 'development',  label: 'Code Review',           level: 'senior'  },
+  { id: 'dev_approve',      domain: 'development',  label: 'Dev Approval',          level: 'manager' },
+  { id: 'test_unit',        domain: 'testing',      label: 'Unit Testing',          level: 'junior'  },
+  { id: 'test_integration', domain: 'testing',      label: 'Integration Testing',   level: 'senior'  },
+  { id: 'test_approve',     domain: 'testing',      label: 'QA Approval',           level: 'manager' },
+  { id: 'sec_scan',         domain: 'security',     label: 'Security Scan',         level: 'junior'  },
+  { id: 'sec_review',       domain: 'security',     label: 'Security Review',       level: 'senior'  },
+  { id: 'sec_approve',      domain: 'security',     label: 'Security Approval',     level: 'manager' },
+  { id: 'devops_plan',      domain: 'devops',       label: 'Deployment Planning',   level: 'junior'  },
+  { id: 'devops_review',    domain: 'devops',       label: 'Deployment Review',     level: 'senior'  },
+  { id: 'devops_approve',   domain: 'devops',       label: 'Deployment Approval',   level: 'manager' },
+];
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 export const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws';
