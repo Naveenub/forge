@@ -92,8 +92,10 @@ class TestLoginRoute:
         assert resp.status_code == 401
 
     def test_login_missing_fields(self):
+        app.dependency_overrides[get_write_db] = _mock_db_no_user()
         client = TestClient(app)
         resp = client.post("/api/v1/auth/login", json={"email": "x@y.com"})
+        app.dependency_overrides.pop(get_write_db, None)
         assert resp.status_code == 422
 
 
@@ -131,8 +133,10 @@ class TestRefreshRoute:
         assert resp.status_code == 401
 
     def test_refresh_invalid_token(self):
+        app.dependency_overrides[get_read_db] = _mock_db_no_user()
         client = TestClient(app)
         resp = client.post("/api/v1/auth/refresh?refresh=notavalidtoken")
+        app.dependency_overrides.pop(get_read_db, None)
         assert resp.status_code == 401
 
 
@@ -192,7 +196,11 @@ class TestApiKeysRoute:
             session.execute = AsyncMock(return_value=result)
             session.commit = AsyncMock()
             session.add = MagicMock()
-            session.refresh = AsyncMock(side_effect=lambda obj: setattr(obj, 'id', uuid.uuid4()) or None)
+            session.refresh = AsyncMock(side_effect=lambda obj: (
+                setattr(obj, 'id', uuid.uuid4()),
+                setattr(obj, 'revoked', False),
+                setattr(obj, 'created_at', datetime.now(UTC)),
+            ) and None)
             yield session
 
         app.dependency_overrides[get_write_db] = _db
