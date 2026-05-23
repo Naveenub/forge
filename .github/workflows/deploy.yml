@@ -7,6 +7,14 @@ on:
     branches: [main]
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - rollback
 
 env:
   REGISTRY: ghcr.io
