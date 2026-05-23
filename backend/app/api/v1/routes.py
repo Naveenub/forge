@@ -15,8 +15,11 @@ from app.core.config import settings
 from app.db.session import write_session_dep as _write_session_dep
 
 
-async def get_db() -> AsyncSession | None:
-    """Safe DB dependency — returns None when DB is not initialised (e.g. in unit tests)."""
+from collections.abc import AsyncGenerator
+
+
+async def get_db() -> AsyncGenerator[AsyncSession | None, None]:
+    """Safe DB dependency — yields None when DB is not initialised (e.g. in unit tests)."""
     try:
         async for session in _write_session_dep():
             yield session
