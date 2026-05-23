@@ -41,8 +41,9 @@ class WorkspaceService:
         )
         return list(result.scalars())
 
-    # alias for backward compatibility
-    async def list(self, owner_id: str | UUID) -> list[Workspace]:  # type: ignore[override]
+    # alias for backward compatibility with tests that call svc.list(...)
+    async def list(self, owner_id: str | UUID):  # noqa: A003
+        """Alias for list_all."""
         return await self.list_all(owner_id)
 
     async def create(
