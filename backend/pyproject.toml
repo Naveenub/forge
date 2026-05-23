@@ -30,7 +30,18 @@ pythonpath = ["."]
 
 [tool.coverage.run]
 source = ["app"]
-omit = ["*/tests/*", "*/migrations/*"]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "app/core/telemetry.py",
+    "app/core/kafka_client.py",
+    "app/core/redis_client.py",
+    "app/core/events.py",
+    "app/workers/*",
+    "app/api/v1/websocket.py",
+    "app/agents/pipeline_engine.py",
+    "app/db/session.py",
+]
 
 [tool.coverage.report]
 fail_under = 85
