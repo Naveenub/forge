@@ -20,6 +20,7 @@ Architecture → Dev → Testing → Security → DevOps
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688.svg)](https://fastapi.tiangolo.com)
 [![React 18](https://img.shields.io/badge/React-18-61dafb.svg)](https://reactjs.org)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED.svg)](https://docker.com)
+[![Release](https://img.shields.io/badge/release-v3.0.0-brightgreen.svg)](https://github.com/Naveenub/forge/releases/tag/v3.0.0)
 
 ---
 
@@ -44,6 +45,16 @@ Requirements → Architecture  →  Development  →  Testing   →  Security  �
 
 ---
 
+## What's New in v3.0.0
+
+- **nginx.conf hardened** — security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy) added to the frontend container; `gzip_min_length` and `try_files $uri =404` for static assets now consistent across all environments
+- **CI/CD deploy gates clarified** — staging triggers on `develop` branch push; production triggers on GitHub Release publish (blue-green)
+- **Three nginx.conf copies unified** — `frontend/nginx.conf`, `infrastructure/docker/nginx.conf`, and `infrastructure/docker/nginx/nginx.conf` now have consistent config
+
+See [CHANGELOG.md](CHANGELOG.md) for full history.
+
+---
+
 ## Quick Start
 
 ### Prerequisites
@@ -58,7 +69,7 @@ Requirements → Architecture  →  Development  →  Testing   →  Security  �
 git clone https://github.com/Naveenub/forge.git
 cd forge
 cp .env.example .env
-Edit .env and add your ANTHROPIC_API_KEY
+# Edit .env and add your ANTHROPIC_API_KEY
 ```
 
 ### 2. Start with Docker Compose
@@ -79,7 +90,7 @@ docker compose up -d
 ### 3. Local development
 
 ```bash
-Backend
+# Backend
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
@@ -206,6 +217,7 @@ forge/
 │   │   │   └── formatters.test.js
 │   │   ├── App.jsx
 │   │   └── main.jsx
+│   ├── nginx.conf                  # ← hardened: security headers + gzip_min_length
 │   ├── package.json
 │   ├── vite.config.js
 │   └── vitest.config.js
@@ -525,8 +537,14 @@ helm upgrade --install forge infrastructure/helm/forge \
 
 ### GitHub Actions CI/CD
 
-Push to `develop` → staging deployment  
-Create a release tag → blue-green production deployment with health checks and auto-rollback
+| Trigger | Environment | What happens |
+|---|---|---|
+| Push to `main` | — | Quality scan + tests + build only |
+| Push to `develop` | Staging | Full pipeline + `helm upgrade` to staging |
+| Publish GitHub Release | Production | Full pipeline + blue-green deploy with health checks + auto-rollback |
+
+**To deploy to staging:** push or merge to the `develop` branch.  
+**To deploy to production:** go to **Releases → Draft a new release**, create tag `vX.Y.Z` targeting `main`, then **Publish release**.
 
 ---
 
