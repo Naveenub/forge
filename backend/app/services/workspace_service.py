@@ -41,10 +41,6 @@ class WorkspaceService:
         )
         return list(result.scalars())
 
-    # alias for backward compatibility with tests that call svc.list(...)
-    async def list(self, owner_id: str | UUID):  # noqa: A003
-        """Alias for list_all."""
-        return await self.list_all(owner_id)
 
     async def create(
         self,
@@ -184,3 +180,11 @@ class ProjectService:
 
     async def delete_project(self, project_id: str | UUID) -> None:
         return await self.delete(project_id)
+
+# Patch svc.list(...) onto WorkspaceService so tests that call it still work.
+# Named outside the class body to avoid mypy treating it as a type alias for
+# the builtin `list`.
+async def _workspace_list(self, owner_id):  # type: ignore[misc]
+    return await self.list_all(owner_id)
+
+WorkspaceService.list = _workspace_list  # type: ignore[attr-defined]
