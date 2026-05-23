@@ -149,7 +149,7 @@ class TestNotificationService:
 class TestMetricsMiddleware:
     @pytest.mark.asyncio
     async def test_metrics_dispatch_calls_call_next(self):
-        from app.core.metrics import MetricsMiddleware
+        from app.core.metrics import PrometheusMiddleware as MetricsMiddleware
         from starlette.testclient import TestClient
         from fastapi import FastAPI
 
