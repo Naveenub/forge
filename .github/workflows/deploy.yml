@@ -238,13 +238,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check kubeconfig secret
+        id: check
+        run: |
+          if [ -z "${{ secrets.KUBE_CONFIG_STAGING }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Skip — no cluster configured
+        if: steps.check.outputs.configured == 'false'
+        run: echo "⚠️ KUBE_CONFIG_STAGING not set. Skipping staging deploy."
+
       - name: Configure kubectl
+        if: steps.check.outputs.configured == 'true'
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
 
       - name: Deploy with Helm
+        if: steps.check.outputs.configured == 'true'
         run: |
           helm upgrade --install forge-staging ./infrastructure/helm/forge \
             --namespace forge-staging \
@@ -256,6 +271,7 @@ jobs:
             --wait --timeout=5m
 
       - name: Run smoke tests
+        if: steps.check.outputs.configured == 'true'
         run: |
           kubectl run smoke-test --rm -it --restart=Never \
             --image=curlimages/curl:latest \
@@ -274,13 +290,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check kubeconfig secret
+        id: check
+        run: |
+          if [ -z "${{ secrets.KUBE_CONFIG_PRODUCTION }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Skip — no cluster configured
+        if: steps.check.outputs.configured == 'false'
+        run: echo "⚠️ KUBE_CONFIG_PRODUCTION not set. Skipping production deploy."
+
       - name: Configure kubectl
+        if: steps.check.outputs.configured == 'true'
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
 
       - name: Determine current deployment color
+        if: steps.check.outputs.configured == 'true'
         id: color
         run: |
           CURRENT=$(kubectl get service forge-backend-service -n $KUBE_NAMESPACE \
@@ -294,6 +325,7 @@ jobs:
           fi
 
       - name: Deploy new color
+        if: steps.check.outputs.configured == 'true'
         run: |
           helm upgrade --install forge-${{ steps.color.outputs.new_color }} \
             ./infrastructure/helm/forge \
@@ -305,6 +337,7 @@ jobs:
             --wait --timeout=10m
 
       - name: Run health checks on new deployment
+        if: steps.check.outputs.configured == 'true'
         run: |
           for i in {1..10}; do
             kubectl exec -n $KUBE_NAMESPACE \
@@ -314,20 +347,24 @@ jobs:
           done
 
       - name: Switch traffic to new deployment
+        if: steps.check.outputs.configured == 'true'
         run: |
           kubectl patch service forge-backend-service \
             -n $KUBE_NAMESPACE \
-            -p '{"spec":{"selector":{"color":"${{ steps.color.outputs.new_color }}"}}}'
+            -p '{"spec":{"selector":{"color":"${{ steps.color.outputs.new_color }}"}}}' 
 
       - name: Monitor for 5 minutes
+        if: steps.check.outputs.configured == 'true'
         run: sleep 300
 
       - name: Scale down old deployment
+        if: steps.check.outputs.configured == 'true'
         run: |
           kubectl scale deployment forge-${{ steps.color.outputs.current_color }} \
             -n $KUBE_NAMESPACE --replicas=0
 
       - name: Notify deployment
+        if: steps.check.outputs.configured == 'true'
         uses: slackapi/slack-github-action@v1.26.0
         with:
           payload: |
@@ -357,13 +394,28 @@ jobs:
     environment: production
 
     steps:
+      - name: Check kubeconfig secret
+        id: check
+        run: |
+          if [ -z "${{ secrets.KUBE_CONFIG_PRODUCTION }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Skip — no cluster configured
+        if: steps.check.outputs.configured == 'false'
+        run: echo "⚠️ KUBE_CONFIG_PRODUCTION not set. Cannot rollback."
+
       - name: Configure kubectl
+        if: steps.check.outputs.configured == 'true'
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
 
       - name: Execute rollback
+        if: steps.check.outputs.configured == 'true'
         run: |
           kubectl rollout undo deployment/forge-backend -n $KUBE_NAMESPACE
           kubectl rollout status deployment/forge-backend -n $KUBE_NAMESPACE
