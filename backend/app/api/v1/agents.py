@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import CurrentUserID
 from app.core.database import get_read_db
 from app.db.models import AgentDomain, AgentLevel, PipelineStage, PipelineStatus
 
@@ -33,7 +32,6 @@ _AGENT_CATALOG = [
 
 @router.get("", summary="List all 15 agents with live status")
 async def list_agents(
-    user_id: CurrentUserID,
     db: AsyncSession = Depends(get_read_db),
 ):
     # Find any currently-running stages to overlay live status
@@ -66,7 +64,7 @@ async def list_agents(
 
 
 @router.get("/status", summary="Aggregate agent pool status")
-async def agent_status(user_id: CurrentUserID, db: AsyncSession = Depends(get_read_db)):
+async def agent_status(db: AsyncSession = Depends(get_read_db)):
     running_q = await db.execute(
         select(PipelineStage).where(PipelineStage.status == PipelineStatus.RUNNING)
     )

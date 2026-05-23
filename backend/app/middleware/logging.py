@@ -18,6 +18,10 @@ from starlette.responses import Response
 
 logger = logging.getLogger("forge.access")
 
+# Suppress noisy httpx transport logs that would pollute access logs
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
 # Paths that generate too much log noise — only log if status >= 400
 _MUTED_PATHS = frozenset({
     "/health",

@@ -94,13 +94,13 @@ async def request_id_middleware(request: Request, call_next):
 app.include_router(health_router)
 app.include_router(metrics_router)
 app.include_router(auth.router,       prefix="/api/v1/auth",       tags=["Authentication"])
+app.include_router(v1_router)
 app.include_router(workspaces.router, prefix="/api/v1/workspaces", tags=["Workspaces"])
 app.include_router(projects.router,   prefix="/api/v1/projects",   tags=["Projects"])
 app.include_router(pipelines.router,  prefix="/api/v1/pipelines",  tags=["Pipelines"])
 app.include_router(agents.router,     prefix="/api/v1/agents",     tags=["Agents"])
 app.include_router(artifacts.router,  prefix="/api/v1/artifacts",  tags=["Artifacts"])
 app.include_router(websocket.router,  prefix="/ws",                tags=["WebSocket"])
-app.include_router(v1_router)
 
 
 @app.exception_handler(RequestValidationError)

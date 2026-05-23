@@ -41,6 +41,10 @@ class WorkspaceService:
         )
         return list(result.scalars())
 
+    # alias for backward compatibility
+    async def list(self, owner_id: str | UUID) -> list[Workspace]:
+        return await self.list_all(owner_id)
+
     async def create(
         self,
         owner_id: str | UUID,

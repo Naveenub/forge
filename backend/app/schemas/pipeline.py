@@ -61,12 +61,12 @@ class ArtifactRead(BaseModel):
 
     id:            UUID
     pipeline_id:   UUID
-    stage_id:      UUID
+    stage_id:      UUID | None = None
     artifact_type: str
     name:          str
     content:       str | None = None
     checksum:      str | None = None
-    version:       int
+    version:       int = 1
     is_immutable:  bool
     size_bytes:    int
     created_at:    datetime

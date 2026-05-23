@@ -101,7 +101,7 @@ class AuthService:
             "key":     raw_key,
             "prefix":  api_key.prefix,
             "scopes":  api_key.scopes,
-            "created_at": api_key.created_at.isoformat(),
+            "created_at": api_key.created_at.isoformat() if api_key.created_at else None,
         }
 
     async def list_api_keys(self, user_id: UUID) -> list[ApiKey]:

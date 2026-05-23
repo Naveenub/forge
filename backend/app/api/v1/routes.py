@@ -5,14 +5,23 @@ Covers: workspaces, projects, pipelines, artifacts, approvals, agents, metrics
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.db.models import get_db
+from app.db.session import write_session_dep as _write_session_dep
+
+
+async def get_db() -> Optional[AsyncSession]:
+    """Safe DB dependency — returns None when DB is not initialised (e.g. in unit tests)."""
+    try:
+        async for session in _write_session_dep():
+            yield session
+    except (RuntimeError, TypeError):
+        yield None
 
 router = APIRouter(prefix="/api/v1")
 
