@@ -4,10 +4,27 @@ Uses FastAPI TestClient — no real DB required (routes return static data).
 """
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.core.database import get_read_db, get_write_db
+
+
+async def _mock_db():
+    """Yield a mock AsyncSession so endpoints don't hit _ReadSession=None."""
+    session = AsyncMock()
+    # agent status query returns empty result (all agents idle)
+    empty_result = MagicMock()
+    empty_result.scalars.return_value = []
+    session.execute = AsyncMock(return_value=empty_result)
+    yield session
+
+
+app.dependency_overrides[get_read_db] = _mock_db
+app.dependency_overrides[get_write_db] = _mock_db
 
 client = TestClient(app)
 
