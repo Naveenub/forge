@@ -11,6 +11,13 @@ from collections.abc import AsyncGenerator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+# ── Ensure env vars are set before any app module is imported ─────────────────
+# These are required by app.core.config at import time.
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+os.environ.setdefault("DATABASE_URL_REPLICA", "sqlite+aiosqlite:///:memory:")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
+os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
+
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
@@ -21,14 +28,23 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-# ── Ensure env vars are set before any app module is imported ─────────────────
-# These are required by app.core.config at import time.
-os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
-os.environ.setdefault("DATABASE_URL_REPLICA", "sqlite+aiosqlite:///:memory:")
-os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
-os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
-
 from app.db.models import Base  # noqa: E402  (must come after env setup)
+
+# ── Module-level session factory ──────────────────────────────────────────────
+# Several test modules (test_routes.py, test_auth_routes.py) create a
+# TestClient(app) at *import time*, before any pytest fixture can run.
+# We must seed _WriteSession / _ReadSession in app.core.database right here
+# so those clients have a working DB when their test methods call DB routes.
+_test_engine = create_async_engine(
+    "sqlite+aiosqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+)
+_TestSessionFactory = async_sessionmaker(_test_engine, expire_on_commit=False)
+
+import app.core.database as _core_db  # noqa: E402
+
+_core_db._WriteSession = _TestSessionFactory
+_core_db._ReadSession  = _TestSessionFactory
 
 
 # ── Event loop ────────────────────────────────────────────────────────────────
@@ -42,21 +58,16 @@ def event_loop_policy():
 
 @pytest.fixture(scope="session")
 async def engine():
-    _engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-    )
-    async with _engine.begin() as conn:
+    async with _test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    yield _engine
-    await _engine.dispose()
+    yield _test_engine
+    await _test_engine.dispose()
 
 
 @pytest.fixture
 async def db(engine) -> AsyncGenerator[AsyncSession, None]:
     """Yield a per-test AsyncSession that is always rolled back."""
-    SessionFactory = async_sessionmaker(engine, expire_on_commit=False)
-    async with SessionFactory() as session:
+    async with _TestSessionFactory() as session:
         yield session
         await session.rollback()
 
@@ -67,9 +78,6 @@ async def db(engine) -> AsyncGenerator[AsyncSession, None]:
 def app(db) -> FastAPI:
     """Return the FastAPI app with overridden DB dependencies."""
     from app.main import app as _app
-    # Override the dependency callables that routes actually use (from dependencies.py).
-    # These are imported as write_session_dep / read_session_dep from app.db.session,
-    # then re-exported as WriteDB / ReadDB via Annotated[..., Depends(...)].
     from app.db.session import write_session_dep, read_session_dep
 
     async def override_db():
