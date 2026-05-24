@@ -86,8 +86,8 @@ class TestPipelineService:
         svc = PipelineService(mock_session)
 
         result = await svc.cancel(str(pipeline.id))
-        # cancel sets status to FAILED (with completed_at)
-        assert result.status == PipelineStatus.FAILED
+        # cancel sets status to CANCELLED (with completed_at)
+        assert result.status == PipelineStatus.CANCELLED
 
     @pytest.mark.asyncio
     async def test_cancel_pending_pipeline(self, mock_session):
@@ -98,7 +98,7 @@ class TestPipelineService:
         svc = PipelineService(mock_session)
 
         result = await svc.cancel(str(pipeline.id))
-        assert result.status == PipelineStatus.FAILED
+        assert result.status == PipelineStatus.CANCELLED
 
     @pytest.mark.asyncio
     async def test_cancel_completed_pipeline_raises(self, mock_session):
