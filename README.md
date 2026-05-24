@@ -20,7 +20,7 @@ Architecture → Dev → Testing → Security → DevOps
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688.svg)](https://fastapi.tiangolo.com)
 [![React 18](https://img.shields.io/badge/React-18-61dafb.svg)](https://reactjs.org)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED.svg)](https://docker.com)
-[![Release](https://img.shields.io/badge/release-v3.0.0-brightgreen.svg)](https://github.com/Naveenub/forge/releases/tag/v3.0.0)
+[![Release](https://img.shields.io/badge/release-v3.1.0-brightgreen.svg)](https://github.com/Naveenub/forge/releases/tag/v3.1.0)
 
 ---
 
@@ -45,11 +45,13 @@ Requirements → Architecture  →  Development  →  Testing   →  Security  �
 
 ---
 
-## What's New in v3.0.0
+## What's New in v3.1.0
 
-- **nginx.conf hardened** — security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy) added to the frontend container; `gzip_min_length` and `try_files $uri =404` for static assets now consistent across all environments
-- **CI/CD deploy gates clarified** — staging triggers on `develop` branch push; production triggers on GitHub Release publish (blue-green)
-- **Three nginx.conf copies unified** — `frontend/nginx.conf`, `infrastructure/docker/nginx.conf`, and `infrastructure/docker/nginx/nginx.conf` now have consistent config
+- **Security patches** — `cryptography` → 46.0.7 (buffer overflow fix), `python-multipart` → 0.0.27 (DoS fix), `vite` → 8.0.14 (path traversal fix)
+- **Vite 8 migration** — upgraded `@vitejs/plugin-react` to v6, fixed `manualChunks` to function syntax for Rolldown compatibility, regenerated `package-lock.json`
+- **CI/CD hardened** — deploy jobs skip gracefully without kubeconfig secrets, `workflow_dispatch` added for Emergency Rollback, frontend test command fixed (`test:ci`)
+- **nginx.conf hardened** — security headers across all three nginx.conf copies unified; `gzip_min_length` and `try_files $uri =404` consistent everywhere
+- **Plaintext password logging removed** — `seed.py` no longer logs demo account passwords to stdout (CodeQL CWE-532)
 
 See [CHANGELOG.md](CHANGELOG.md) for full history.
 
