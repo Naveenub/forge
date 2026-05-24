@@ -20,7 +20,7 @@ Architecture → Dev → Testing → Security → DevOps
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688.svg)](https://fastapi.tiangolo.com)
 [![React 18](https://img.shields.io/badge/React-18-61dafb.svg)](https://reactjs.org)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED.svg)](https://docker.com)
-[![Release](https://img.shields.io/badge/release-v3.1.0-brightgreen.svg)](https://github.com/Naveenub/forge/releases/tag/v3.1.0)
+[![Release](https://img.shields.io/badge/release-v3.2.0-brightgreen.svg)](https://github.com/Naveenub/forge/releases/tag/v3.2.0)
 
 ---
 
