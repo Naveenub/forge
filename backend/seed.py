@@ -152,8 +152,7 @@ async def seed(db: AsyncSession) -> None:
     logger.info("")
     logger.info("Demo accounts:")
     for u in users:
-        logger.info("  %-25s  password: %s", u["email"], u["password"])
-
+        logger.info("  %-25s  password: [see .env.example]", u["email"])
 
 async def main() -> None:
     engine = create_async_engine(DATABASE_URL, echo=False)
