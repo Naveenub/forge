@@ -5,7 +5,7 @@ Broadcasts pipeline events to connected clients via WebSocket
 import asyncio
 import logging
 
-from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Query, Response, WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState
 
 from app.core.auth import verify_ws_token
@@ -55,6 +55,20 @@ class ConnectionManager:
 
 
 manager = ConnectionManager()
+
+
+
+# ── HTTP probe routes — return 426 so tests can confirm the path is registered ─
+
+@router.get("/pipeline/{pipeline_id}", include_in_schema=False)
+@router.get("/pipelines/{pipeline_id}", include_in_schema=False)
+async def ws_probe(pipeline_id: str) -> Response:
+    """Returns 426 Upgrade Required for non-WebSocket requests to WS paths."""
+    return Response(
+        content="WebSocket upgrade required",
+        status_code=426,
+        headers={"Upgrade": "websocket"},
+    )
 
 
 @router.websocket("/pipeline/{pipeline_id}")
@@ -116,6 +130,10 @@ async def pipeline_websocket(
     finally:
         event_bus.unsubscribe(event_handler)
         manager.disconnect(websocket, pipeline_id)
+
+
+# Register the plural alias (/ws/pipelines/…) pointing to the same handler.
+router.add_api_websocket_route("/pipelines/{pipeline_id}", pipeline_websocket)
 
 
 async def notify_pipeline_update(pipeline_id: str, event_type: str, data: dict) -> None:
