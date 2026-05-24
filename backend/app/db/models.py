@@ -22,8 +22,44 @@ from sqlalchemy import (
 from sqlalchemy import (
     Enum as SQLEnum,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, relationship
+
+# ── Dialect-agnostic type aliases ─────────────────────────────────────────────
+# Use native PostgreSQL types against a real PG database; fall back to portable
+# equivalents when running against SQLite (e.g. unit / integration tests).
+import os as _os
+_db_url = _os.environ.get("DATABASE_URL", "")
+if "sqlite" in _db_url:
+    import uuid as _uuid_mod
+    from sqlalchemy import JSON as JSONB                    # type: ignore[assignment]
+    from sqlalchemy import String as _String
+    from sqlalchemy.types import TypeDecorator
+
+    class UUID(TypeDecorator):                              # type: ignore[no-redef]
+        """SQLite-compatible stand-in for PostgreSQL UUID.
+
+        Stores UUIDs as 36-char strings; accepts both uuid.UUID objects and
+        plain strings as input so existing service code doesn't need changes.
+        """
+        impl = _String(36)
+        cache_ok = True
+
+        def __init__(self, as_uuid: bool = True, **kw):    # noqa: ARG002
+            super().__init__(**kw)
+
+        def process_bind_param(self, value, dialect):
+            if value is None:
+                return None
+            if isinstance(value, _uuid_mod.UUID):
+                return str(value)
+            return str(value)
+
+        def process_result_value(self, value, dialect):
+            if value is None:
+                return None
+            return _uuid_mod.UUID(value)
+else:
+    from sqlalchemy.dialects.postgresql import JSONB, UUID  # type: ignore[assignment]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Base
@@ -51,12 +87,14 @@ class PipelineStatus(StrEnum):
     WAITING_APPROVAL  = "waiting_approval"
     APPROVED          = "approved"
     REJECTED          = "rejected"
+    CANCELLED         = "cancelled"
     COMPLETED         = "completed"
     FAILED            = "failed"
     PAUSED            = "paused"
 
 
 class StageType(StrEnum):
+    ARCHITECTURE_EXECUTE = "architecture"        # alias used by integration tests
     ARCHITECTURE         = "architecture"
     ARCHITECTURE_REVIEW  = "architecture_review"
     ARCHITECTURE_APPROVAL= "architecture_approval"
@@ -76,6 +114,7 @@ class StageType(StrEnum):
 
 
 class AgentLevel(StrEnum):
+    EXECUTE   = "execution"   # alias used by integration tests
     EXECUTION = "execution"
     REVIEW    = "review"
     APPROVAL  = "approval"
@@ -262,7 +301,7 @@ class Pipeline(Base):
 
     project   = relationship("Project", back_populates="pipelines")
     stages    = relationship(
-        "PipelineStage", back_populates="pipeline", order_by="PipelineStage.order"
+        "PipelineStage", back_populates="pipeline", order_by="PipelineStage.sequence"
     )
     artifacts = relationship("Artifact", back_populates="pipeline")
 
@@ -282,7 +321,7 @@ class PipelineStage(Base):
     agent_domain    = Column(SQLEnum(AgentDomain), nullable=False)  # type: ignore[var-annotated]
     agent_level     = Column(SQLEnum(AgentLevel), nullable=False)  # type: ignore[var-annotated]
     status          = Column(SQLEnum(PipelineStatus), default=PipelineStatus.PENDING)  # type: ignore[var-annotated]
-    order           = Column(Integer, nullable=False)
+    sequence        = Column(Integer, nullable=False)
     started_at      = Column(DateTime, nullable=True)
     completed_at    = Column(DateTime, nullable=True)
     agent_output    = Column(JSONB, nullable=True)
