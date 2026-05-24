@@ -103,7 +103,7 @@ class PipelineStateMachine:
 
         await self._transition_pipeline(PipelineStatus.RUNNING, pipeline)
 
-        stages = sorted(pipeline.stages, key=lambda s: s.order)
+        stages = sorted(pipeline.stages, key=lambda s: s.sequence)
 
         for stage in stages:
             # Skip optional devops stages if deployment not enabled
@@ -136,7 +136,7 @@ class PipelineStateMachine:
 
     async def _execute_stage(self, stage: PipelineStage, pipeline: Pipeline) -> bool:
         """Execute a single pipeline stage with retry logic"""
-        logger.info(f"Executing stage: {stage.stage_type} (order: {stage.order})")
+        logger.info(f"Executing stage: {stage.stage_type} (order: {stage.sequence})")
 
         stage.status = PipelineStatus.RUNNING  # type: ignore[assignment]
         stage.started_at = datetime.utcnow()  # type: ignore[assignment]
@@ -147,7 +147,7 @@ class PipelineStateMachine:
             pipeline_id=self.pipeline_id,
             stage_id=str(stage.id),
             event_type="stage_started",
-            data={"stage_type": stage.stage_type, "order": stage.order}
+            data={"stage_type": stage.stage_type, "order": stage.sequence}
         ))
 
         max_retries = 3
