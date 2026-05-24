@@ -8,7 +8,7 @@
 backend:
   replicaCount: 3
   image:
-    repository: ghcr.io/your-org/forge-backend
+    repository: ghcr.io/naveenub/forge/backend
     tag: "1.0.0"        # pin to exact release tag in production — never 'latest'
     pullPolicy: IfNotPresent
 
@@ -42,7 +42,7 @@ backend:
 frontend:
   replicaCount: 2
   image:
-    repository: ghcr.io/your-org/forge-frontend
+    repository: ghcr.io/naveenub/forge/frontend
     tag: "1.0.0"
     pullPolicy: IfNotPresent
 
