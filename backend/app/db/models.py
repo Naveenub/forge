@@ -163,7 +163,7 @@ class AuditAction(StrEnum):
 class User(Base):
     __tablename__ = "users"
 
-    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # type: ignore[var-annotated]
     email           = Column(String(255), unique=True, nullable=False, index=True)
     username        = Column(String(100), unique=True, nullable=False)
     name            = Column(String(255), nullable=False, default="")
@@ -193,8 +193,8 @@ class User(Base):
 class ApiKey(Base):
     __tablename__ = "api_keys"
 
-    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id    = Column(
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # type: ignore[var-annotated]
+    user_id    = Column(  # type: ignore[var-annotated]
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     name       = Column(String(100), nullable=False, default="default")
@@ -215,11 +215,11 @@ class ApiKey(Base):
 class Workspace(Base):
     __tablename__ = "workspaces"
 
-    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # type: ignore[var-annotated]
     name        = Column(String(255), nullable=False)
     slug        = Column(String(100), unique=True, nullable=False, index=True)
     description = Column(Text, nullable=True)
-    owner_id    = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    owner_id    = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)  # type: ignore[var-annotated]
     settings    = Column(JSONB, default={})
     is_active   = Column(Boolean, default=True)
     created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -233,15 +233,15 @@ class Workspace(Base):
 class WorkspaceMember(Base):
     __tablename__ = "workspace_members"
 
-    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workspace_id = Column(
+    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # type: ignore[var-annotated]
+    workspace_id = Column(  # type: ignore[var-annotated]
         UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
     )
-    user_id      = Column(
+    user_id      = Column(  # type: ignore[var-annotated]
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     role         = Column(SQLEnum(UserRole), nullable=False, default=UserRole.CONTRIBUTOR)  # type: ignore[var-annotated]
-    invited_by   = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    invited_by   = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # type: ignore[var-annotated]
     joined_at    = Column(DateTime, default=datetime.utcnow)
 
     workspace = relationship("Workspace", back_populates="members")
@@ -255,8 +255,8 @@ class WorkspaceMember(Base):
 class Project(Base):
     __tablename__ = "projects"
 
-    id                 = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    workspace_id       = Column(
+    id                 = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # type: ignore[var-annotated]
+    workspace_id       = Column(  # type: ignore[var-annotated]
         UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
     )
     name               = Column(String(255), nullable=False)
@@ -269,7 +269,7 @@ class Project(Base):
     deployment_enabled = Column(Boolean, default=False)
     target_cloud       = Column(String(50), nullable=True)
     status             = Column(String(50), default="draft")
-    created_by         = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_by         = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)  # type: ignore[var-annotated]
     created_at         = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at         = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -285,8 +285,8 @@ class Project(Base):
 class Pipeline(Base):
     __tablename__ = "pipelines"
 
-    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id    = Column(
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # type: ignore[var-annotated]
+    project_id    = Column(  # type: ignore[var-annotated]
         UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
     version       = Column(Integer, default=1, nullable=False)
@@ -294,7 +294,7 @@ class Pipeline(Base):
     current_stage = Column(SQLEnum(StageType), nullable=True)  # type: ignore[var-annotated]
     started_at    = Column(DateTime, nullable=True)
     completed_at  = Column(DateTime, nullable=True)
-    triggered_by  = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    triggered_by  = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)  # type: ignore[var-annotated]
     config        = Column(JSONB, default={})
     extra         = Column(JSONB, default={})
     created_at    = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -313,8 +313,8 @@ class Pipeline(Base):
 class PipelineStage(Base):
     __tablename__ = "pipeline_stages"
 
-    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    pipeline_id     = Column(
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # type: ignore[var-annotated]
+    pipeline_id     = Column(  # type: ignore[var-annotated]
         UUID(as_uuid=True), ForeignKey("pipelines.id", ondelete="CASCADE"), nullable=False
     )
     stage_type      = Column(SQLEnum(StageType), nullable=False)  # type: ignore[var-annotated]
@@ -327,7 +327,7 @@ class PipelineStage(Base):
     agent_output    = Column(JSONB, nullable=True)
     review_output   = Column(JSONB, nullable=True)
     approval_output = Column(JSONB, nullable=True)
-    approved_by     = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    approved_by     = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # type: ignore[var-annotated]
     rejection_reason= Column(Text, nullable=True)
     retry_count     = Column(Integer, default=0)
     input_data      = Column(JSONB, default={})
@@ -340,11 +340,11 @@ class PipelineStage(Base):
 class Artifact(Base):
     __tablename__ = "artifacts"
 
-    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    pipeline_id   = Column(
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # type: ignore[var-annotated]
+    pipeline_id   = Column(  # type: ignore[var-annotated]
         UUID(as_uuid=True), ForeignKey("pipelines.id", ondelete="CASCADE"), nullable=False
     )
-    stage_id      = Column(UUID(as_uuid=True), ForeignKey("pipeline_stages.id"), nullable=False)
+    stage_id      = Column(UUID(as_uuid=True), ForeignKey("pipeline_stages.id"), nullable=False)  # type: ignore[var-annotated]
     artifact_type = Column(SQLEnum(ArtifactType), nullable=False)  # type: ignore[var-annotated]
     name          = Column(String(255), nullable=False)
     content       = Column(Text, nullable=True)
@@ -368,14 +368,14 @@ class ApprovalRequest(Base):
     """Governance gate — blocks pipeline until a human approves or rejects."""
     __tablename__ = "approval_requests"
 
-    id                = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    stage_id          = Column(UUID(as_uuid=True), ForeignKey("pipeline_stages.id"), nullable=False)
-    pipeline_id       = Column(UUID(as_uuid=True), ForeignKey("pipelines.id"), nullable=False)
-    requested_by      = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id                = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # type: ignore[var-annotated]
+    stage_id          = Column(UUID(as_uuid=True), ForeignKey("pipeline_stages.id"), nullable=False)  # type: ignore[var-annotated]
+    pipeline_id       = Column(UUID(as_uuid=True), ForeignKey("pipelines.id"), nullable=False)  # type: ignore[var-annotated]
+    requested_by      = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)  # type: ignore[var-annotated]
     required_role     = Column(SQLEnum(UserRole), nullable=False, default=UserRole.MANAGER)  # type: ignore[var-annotated]
     status            = Column(String(50), default="pending")     # pending | approved | rejected
     decision          = Column(String(50), nullable=True)
-    decided_by        = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    decided_by        = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # type: ignore[var-annotated]
     decided_at        = Column(DateTime, nullable=True)
     notes             = Column(Text, nullable=True)
     notification_sent = Column(Boolean, default=False)
@@ -392,12 +392,12 @@ Approval = ApprovalRequest
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
-    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id       = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # type: ignore[var-annotated]
+    user_id       = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # type: ignore[var-annotated]
     action        = Column(SQLEnum(AuditAction), nullable=False)  # type: ignore[var-annotated]
     resource_type = Column(String(100), nullable=False)
     resource_id   = Column(String(255), nullable=True)
-    workspace_id  = Column(UUID(as_uuid=True), nullable=True)
+    workspace_id  = Column(UUID(as_uuid=True), nullable=True)  # type: ignore[var-annotated]
     ip_address    = Column(String(45), nullable=True)
     user_agent    = Column(String(500), nullable=True)
     request_id    = Column(String(100), nullable=True)
@@ -416,7 +416,7 @@ class EventStore(Base):
     """Immutable event log for event sourcing."""
     __tablename__ = "event_store"
 
-    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # type: ignore[var-annotated]
     aggregate_id    = Column(String(255), nullable=False, index=True)
     aggregate_type  = Column(String(100), nullable=False)
     event_type      = Column(String(100), nullable=False)
