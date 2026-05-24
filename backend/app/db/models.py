@@ -4,6 +4,7 @@ All tables in one file for easy cross-reference.
 """
 from __future__ import annotations
 
+import os as _os
 import uuid
 from datetime import datetime
 from enum import StrEnum
@@ -27,10 +28,9 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 # ── Dialect-agnostic type aliases ─────────────────────────────────────────────
 # Use native PostgreSQL types against a real PG database; fall back to portable
 # equivalents when running against SQLite (e.g. unit / integration tests).
-import os as _os
 _db_url = _os.environ.get("DATABASE_URL", "")
 if "sqlite" in _db_url:
-    import uuid as _uuid_mod
+    import uuid as _uuid_mod  # noqa: I001
     from sqlalchemy import JSON as JSONB                    # type: ignore[assignment]
     from sqlalchemy import String as _String
     from sqlalchemy.types import TypeDecorator
