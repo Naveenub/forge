@@ -66,7 +66,16 @@ async def engine():
 
 @pytest.fixture
 async def db(engine) -> AsyncGenerator[AsyncSession, None]:
-    """Yield a per-test AsyncSession that is always rolled back."""
+    """Yield a per-test AsyncSession with full schema isolation.
+
+    Drops and recreates all tables before each test so tests can't bleed
+    into each other via unique constraints or leftover rows.  This is fast
+    for SQLite in-memory databases.
+    """
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+
     async with _TestSessionFactory() as session:
         yield session
         await session.rollback()
