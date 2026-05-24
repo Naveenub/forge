@@ -30,6 +30,9 @@ from sqlalchemy.ext.asyncio import (
 from app.db.models import Base  # noqa: E402  (must come after env setup)
 
 # ── Module-level session factory (unit tests / import-time TestClient) ────────
+# Several test modules create a TestClient(app) at *import time*, before any
+# pytest fixture can run. We seed _WriteSession / _ReadSession here so those
+# clients have a working DB when their test methods call DB routes.
 _unit_db_url = "sqlite+aiosqlite:///:memory:"
 _test_engine = create_async_engine(
     _unit_db_url,
@@ -41,6 +44,18 @@ import app.core.database as _core_db  # noqa: E402
 
 _core_db._WriteSession = _TestSessionFactory
 _core_db._ReadSession  = _TestSessionFactory
+
+
+# ── Create schema for the unit-test engine at import time ─────────────────────
+# Module-level TestClient instances (e.g. test_agents.py) use this engine
+# directly via the overridden session factory. Without create_all the tables
+# don't exist, causing "no such table" errors on routes that hit the DB.
+
+async def _init_unit_db() -> None:
+    async with _test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+asyncio.run(_init_unit_db())
 
 
 # ── Event loop ────────────────────────────────────────────────────────────────
@@ -101,10 +116,9 @@ async def db(engine) -> AsyncGenerator[AsyncSession, None]:
     """
     Yield a per-test AsyncSession with full schema isolation.
 
-    Fix: acquire a dedicated connection for each test and run DDL + the test
-    on that same connection.  This avoids asyncpg's 'another operation is in
-    progress' error that occurs when drop_all/create_all are interleaved with
-    an already-open session on the same pooled connection.
+    Uses a dedicated connection for DDL so that drop_all/create_all are never
+    interleaved with an already-open session on the same pooled connection
+    (avoids asyncpg 'another operation is in progress' errors).
     """
     async with engine.connect() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -130,7 +144,8 @@ def app(db) -> FastAPI:
     _app.dependency_overrides[write_session_dep] = override_db
     _app.dependency_overrides[read_session_dep] = override_db
     yield _app
-    _app.dependency_overrides.clear()
+    _app.dependency_overrides.pop(write_session_dep, None)
+    _app.dependency_overrides.pop(read_session_dep, None)
 
 
 @pytest_asyncio.fixture
