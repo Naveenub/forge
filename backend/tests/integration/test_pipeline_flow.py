@@ -1,16 +1,14 @@
 """
 Integration tests for the full pipeline flow.
-Uses an in-memory SQLite database via the conftest.py fixtures — no external
-services required.  Run alongside unit tests with:
+Uses a real PostgreSQL database via the conftest.py fixtures.
+
+Run alongside unit tests with:
 
     pytest tests/integration/
 
 or in isolation:
 
     pytest tests/integration/test_pipeline_flow.py -v
-
-The TEST_DATABASE_URL env guard is intentionally removed so these tests
-run in standard CI without extra env setup.
 """
 from __future__ import annotations
 
@@ -24,9 +22,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import (
     Artifact,
+    ArtifactType,
+    AgentDomain,
+    AgentLevel,
     Pipeline,
+    PipelineStage,
     PipelineStatus,
     Project,
+    StageType,
+    User,
     Workspace,
     WorkspaceMember,
 )
@@ -35,6 +39,19 @@ from app.services.workspace_service import ProjectService, WorkspaceService
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
+async def _create_user(db: AsyncSession) -> User:
+    """Insert a minimal User row to satisfy FK constraints on owner_id / triggered_by."""
+    user = User(
+        email=f"test-{uuid.uuid4()}@example.com",
+        username=f"user-{uuid.uuid4().hex[:8]}",
+        name="Test User",
+        hashed_password="hashed",
+    )
+    db.add(user)
+    await db.flush()
+    return user
+
 
 async def _create_workspace(db: AsyncSession, owner_id: str) -> Workspace:
     svc = WorkspaceService(db)
@@ -49,12 +66,13 @@ async def _create_project(db: AsyncSession, workspace_id: str) -> Project:
 # ── Full pipeline flow ─────────────────────────────────────────────────────────
 
 class TestFullPipelineFlow:
-    """End-to-end pipeline tests against the in-memory SQLite database."""
+    """End-to-end pipeline tests against the PostgreSQL database."""
 
     @pytest.mark.asyncio
     async def test_create_workspace_and_project(self, db: AsyncSession):
         """Workspace and project are persisted correctly."""
-        owner_id = str(uuid.uuid4())
+        user = await _create_user(db)
+        owner_id = str(user.id)
         ws = await _create_workspace(db, owner_id)
 
         assert ws.id is not None
@@ -76,7 +94,8 @@ class TestFullPipelineFlow:
     @pytest.mark.asyncio
     async def test_pipeline_created_with_pending_status(self, db: AsyncSession):
         """A newly created pipeline must start in PENDING status."""
-        owner_id = str(uuid.uuid4())
+        user = await _create_user(db)
+        owner_id = str(user.id)
         ws = await _create_workspace(db, owner_id)
         proj = await _create_project(db, str(ws.id))
 
@@ -97,7 +116,8 @@ class TestFullPipelineFlow:
     @pytest.mark.asyncio
     async def test_pipeline_cancel_sets_status(self, db: AsyncSession):
         """Cancelling a pipeline must transition its status to CANCELLED."""
-        owner_id = str(uuid.uuid4())
+        user = await _create_user(db)
+        owner_id = str(user.id)
         ws = await _create_workspace(db, owner_id)
         proj = await _create_project(db, str(ws.id))
 
@@ -110,7 +130,8 @@ class TestFullPipelineFlow:
     @pytest.mark.asyncio
     async def test_pipeline_persisted_in_db(self, db: AsyncSession):
         """Pipeline row must be queryable by ID after creation."""
-        owner_id = str(uuid.uuid4())
+        user = await _create_user(db)
+        owner_id = str(user.id)
         ws = await _create_workspace(db, owner_id)
         proj = await _create_project(db, str(ws.id))
 
@@ -124,10 +145,10 @@ class TestFullPipelineFlow:
     async def test_pipeline_approval_gate_blocks_progression(self, db: AsyncSession):
         """
         A pipeline in PENDING/RUNNING state must not report as COMPLETED
-        until all stages have run.  Without a mocked agent that immediately
-        approves, the pipeline should remain non-completed right after creation.
+        until all stages have run.
         """
-        owner_id = str(uuid.uuid4())
+        user = await _create_user(db)
+        owner_id = str(user.id)
         ws = await _create_workspace(db, owner_id)
         proj = await _create_project(db, str(ws.id))
 
@@ -146,9 +167,9 @@ class TestFullPipelineFlow:
     async def test_artifact_immutability_flag(self, db: AsyncSession):
         """An artifact with is_immutable=True must have a non-null checksum."""
         import hashlib
-        from app.db.models import Artifact, ArtifactType, PipelineStage, StageType, AgentDomain, AgentLevel
 
-        owner_id = str(uuid.uuid4())
+        user = await _create_user(db)
+        owner_id = str(user.id)
         ws = await _create_workspace(db, owner_id)
         proj = await _create_project(db, str(ws.id))
         svc = PipelineService(db)
@@ -189,7 +210,8 @@ class TestFullPipelineFlow:
     @pytest.mark.asyncio
     async def test_rejected_pipeline_can_be_restarted(self, db: AsyncSession):
         """After a rejection, a new pipeline can be created for the same project."""
-        owner_id = str(uuid.uuid4())
+        user = await _create_user(db)
+        owner_id = str(user.id)
         ws = await _create_workspace(db, owner_id)
         proj = await _create_project(db, str(ws.id))
 
