@@ -86,7 +86,8 @@ class PipelineService:
 
     async def retry(self, pipeline_id: str | UUID) -> Pipeline:
         pipeline = await self.get(pipeline_id)
-        if pipeline.status not in (PipelineStatus.FAILED, PipelineStatus.REJECTED, PipelineStatus.CANCELLED):
+        retriable = (PipelineStatus.FAILED, PipelineStatus.REJECTED, PipelineStatus.CANCELLED)
+        if pipeline.status not in retriable:
             raise HTTPException(
                 status_code=400,
                 detail="Only failed or rejected pipelines can be retried",
