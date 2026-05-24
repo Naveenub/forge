@@ -48,3 +48,4 @@ anthropic==0.40.0
 
 # ── HTTP client (used by Anthropic SDK + notifications) ───────────────────────
 httpx==0.28.1
+httpx-ws>=0.6.0
