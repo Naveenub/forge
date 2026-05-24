@@ -78,7 +78,7 @@ class PipelineService:
                     " — only pending/running/waiting can be cancelled"
                 ),
             )
-        pipeline.status = PipelineStatus.FAILED  # type: ignore[assignment]
+        pipeline.status = PipelineStatus.CANCELLED  # type: ignore[assignment]
         pipeline.completed_at = datetime.now(UTC)  # type: ignore[assignment]
         await self.db.commit()
         await self.db.refresh(pipeline)
@@ -86,7 +86,7 @@ class PipelineService:
 
     async def retry(self, pipeline_id: str | UUID) -> Pipeline:
         pipeline = await self.get(pipeline_id)
-        if pipeline.status not in (PipelineStatus.FAILED, PipelineStatus.REJECTED):
+        if pipeline.status not in (PipelineStatus.FAILED, PipelineStatus.REJECTED, PipelineStatus.CANCELLED):
             raise HTTPException(
                 status_code=400,
                 detail="Only failed or rejected pipelines can be retried",
