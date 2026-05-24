@@ -4,7 +4,7 @@
 replicaCount: 3
 
 image:
-  repository: your-registry/forge-backend
+  repository: ghcr.io/naveenub/forge/backend
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -79,7 +79,7 @@ secrets:
 backend:
   replicaCount: 3
   image:
-    repository: ghcr.io/your-org/forge-backend
+    repository: ghcr.io/naveenub/forge/backend
     tag: latest
     pullPolicy: IfNotPresent
   resources:
@@ -94,7 +94,7 @@ backend:
 frontend:
   replicaCount: 2
   image:
-    repository: ghcr.io/your-org/forge-frontend
+    repository: ghcr.io/naveenub/forge/frontend
     tag: latest
     pullPolicy: IfNotPresent
   resources:
