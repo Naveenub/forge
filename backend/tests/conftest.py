@@ -35,8 +35,9 @@ from app.db.models import Base  # noqa: E402  (must come after env setup)
 # TestClient(app) at *import time*, before any pytest fixture can run.
 # We must seed _WriteSession / _ReadSession in app.core.database right here
 # so those clients have a working DB when their test methods call DB routes.
+_unit_db_url = "sqlite+aiosqlite:///:memory:"
 _test_engine = create_async_engine(
-    "sqlite+aiosqlite:///:memory:",
+    _unit_db_url,
     connect_args={"check_same_thread": False},
 )
 _TestSessionFactory = async_sessionmaker(_test_engine, expire_on_commit=False)
@@ -54,14 +55,45 @@ def event_loop_policy():
     return asyncio.DefaultEventLoopPolicy()
 
 
+# ── Integration test engine (PostgreSQL or SQLite depending on env) ────────────
+
+def _make_integration_engine():
+    """
+    For integration tests we use the real DATABASE_URL if it points to
+    PostgreSQL; otherwise fall back to a separate in-memory SQLite instance.
+    JSONB is only available on PostgreSQL, so SQLite integration tests are
+    skipped via the pytest.mark.skip decorator on those test classes.
+    """
+    db_url = os.environ.get("DATABASE_URL", _unit_db_url)
+    if "postgresql" in db_url or "postgres" in db_url:
+        return create_async_engine(db_url, echo=False)
+    # SQLite fallback: use a separate file-based DB to avoid sharing state
+    return create_async_engine(
+        "sqlite+aiosqlite:///./test_integration.db",
+        connect_args={"check_same_thread": False},
+    )
+
+
+_integration_engine = _make_integration_engine()
+_IntegrationSessionFactory = async_sessionmaker(
+    _integration_engine, expire_on_commit=False
+)
+
+
 # ── In-memory SQLite engine (unit tests) ─────────────────────────────────────
 
-@pytest.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session")
 async def engine():
-    async with _test_engine.begin() as conn:
+    """
+    Session-scoped engine for integration tests.
+    Creates all tables once and tears them down at end of session.
+    """
+    async with _integration_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    yield _test_engine
-    await _test_engine.dispose()
+    yield _integration_engine
+    async with _integration_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await _integration_engine.dispose()
 
 
 @pytest.fixture
@@ -76,7 +108,7 @@ async def db(engine) -> AsyncGenerator[AsyncSession, None]:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
-    async with _TestSessionFactory() as session:
+    async with _IntegrationSessionFactory() as session:
         yield session
         await session.rollback()
 
