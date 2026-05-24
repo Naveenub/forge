@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from uuid import UUID
 
 from app.agents.pipeline_engine import PipelineStateMachine
@@ -47,7 +48,13 @@ async def start_pipeline_worker() -> None:
                 name=f"pipeline-{pipeline_id}",
             )
             _active_tasks[pipeline_id] = task
-            task.add_done_callback(lambda t, pid=pipeline_id: _active_tasks.pop(pid, None))  # type: ignore[misc]
+
+            def _make_worker_callback(pid: str) -> Callable[[asyncio.Task], None]:
+                def _cb(t: asyncio.Task) -> None:
+                    _active_tasks.pop(pid, None)
+                return _cb
+
+            task.add_done_callback(_make_worker_callback(pipeline_id))
 
     except asyncio.CancelledError:
         logger.info("Pipeline worker cancelled — shutting down")
@@ -73,7 +80,13 @@ async def run_pipeline_direct(pipeline_id: str | UUID) -> None:
         name=f"pipeline-{pipeline_id}",
     )
     _active_tasks[pipeline_id] = task
-    task.add_done_callback(lambda t, pid=pipeline_id: _active_tasks.pop(pid, None))  # type: ignore[misc]
+
+    def _make_direct_callback(pid: str) -> Callable[[asyncio.Task], None]:
+        def _cb(t: asyncio.Task) -> None:
+            _active_tasks.pop(pid, None)
+        return _cb
+
+    task.add_done_callback(_make_direct_callback(pipeline_id))
 
 
 async def _run_pipeline(pipeline_id: str) -> None:
