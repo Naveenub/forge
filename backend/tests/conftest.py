@@ -12,7 +12,6 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 # ── Ensure env vars are set before any app module is imported ─────────────────
-# These are required by app.core.config at import time.
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("DATABASE_URL_REPLICA", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
@@ -30,11 +29,7 @@ from sqlalchemy.ext.asyncio import (
 
 from app.db.models import Base  # noqa: E402  (must come after env setup)
 
-# ── Module-level session factory ──────────────────────────────────────────────
-# Several test modules (test_routes.py, test_auth_routes.py) create a
-# TestClient(app) at *import time*, before any pytest fixture can run.
-# We must seed _WriteSession / _ReadSession in app.core.database right here
-# so those clients have a working DB when their test methods call DB routes.
+# ── Module-level session factory (unit tests / import-time TestClient) ────────
 _unit_db_url = "sqlite+aiosqlite:///:memory:"
 _test_engine = create_async_engine(
     _unit_db_url,
@@ -55,19 +50,22 @@ def event_loop_policy():
     return asyncio.DefaultEventLoopPolicy()
 
 
-# ── Integration test engine (PostgreSQL or SQLite depending on env) ────────────
+# ── Integration test engine ───────────────────────────────────────────────────
 
 def _make_integration_engine():
     """
     For integration tests we use the real DATABASE_URL if it points to
     PostgreSQL; otherwise fall back to a separate in-memory SQLite instance.
-    JSONB is only available on PostgreSQL, so SQLite integration tests are
-    skipped via the pytest.mark.skip decorator on those test classes.
+
+    Key fix: use NullPool for asyncpg-backed engines so each connection is
+    freshly created and never shared across concurrent coroutines, which
+    causes the 'another operation is in progress' InterfaceError.
     """
     db_url = os.environ.get("DATABASE_URL", _unit_db_url)
     if "postgresql" in db_url or "postgres" in db_url:
-        return create_async_engine(db_url, echo=False)
-    # SQLite fallback: use a separate file-based DB to avoid sharing state
+        from sqlalchemy.pool import NullPool
+        return create_async_engine(db_url, echo=False, poolclass=NullPool)
+    # SQLite fallback: file-based DB to avoid sharing state with unit tests
     return create_async_engine(
         "sqlite+aiosqlite:///./test_integration.db",
         connect_args={"check_same_thread": False},
@@ -80,13 +78,13 @@ _IntegrationSessionFactory = async_sessionmaker(
 )
 
 
-# ── In-memory SQLite engine (unit tests) ─────────────────────────────────────
+# ── Session-scoped engine fixture ─────────────────────────────────────────────
 
 @pytest_asyncio.fixture(scope="session")
 async def engine():
     """
     Session-scoped engine for integration tests.
-    Creates all tables once and tears them down at end of session.
+    Creates all tables once; individual `db` fixtures handle per-test isolation.
     """
     async with _integration_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -96,17 +94,22 @@ async def engine():
     await _integration_engine.dispose()
 
 
-@pytest.fixture
-async def db(engine) -> AsyncGenerator[AsyncSession, None]:
-    """Yield a per-test AsyncSession with full schema isolation.
+# ── Per-test DB session with schema isolation ─────────────────────────────────
 
-    Drops and recreates all tables before each test so tests can't bleed
-    into each other via unique constraints or leftover rows.  This is fast
-    for SQLite in-memory databases.
+@pytest_asyncio.fixture
+async def db(engine) -> AsyncGenerator[AsyncSession, None]:
     """
-    async with engine.begin() as conn:
+    Yield a per-test AsyncSession with full schema isolation.
+
+    Fix: acquire a dedicated connection for each test and run DDL + the test
+    on that same connection.  This avoids asyncpg's 'another operation is in
+    progress' error that occurs when drop_all/create_all are interleaved with
+    an already-open session on the same pooled connection.
+    """
+    async with engine.connect() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
+        await conn.commit()
 
     async with _IntegrationSessionFactory() as session:
         yield session
