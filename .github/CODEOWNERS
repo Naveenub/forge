@@ -1,0 +1,47 @@
+# CODEOWNERS — automatic reviewer assignment for pull requests
+# Docs: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Format: <pattern>  <owner> [<owner2> ...]
+# Last matching rule wins.
+
+# ── Global fallback — everything requires Naveenub ────────────────────────────
+*                                           @Naveenub
+
+# ── CI/CD & workflows ─────────────────────────────────────────────────────────
+.github/                                    @Naveenub
+.github/workflows/                          @Naveenub
+
+# ── Backend ───────────────────────────────────────────────────────────────────
+backend/                                    @Naveenub
+backend/app/agents/                         @Naveenub
+backend/app/api/                            @Naveenub
+backend/app/core/security.py                @Naveenub
+backend/app/middleware/                     @Naveenub
+backend/requirements.txt                    @Naveenub
+backend/requirements-dev.txt                @Naveenub
+
+# ── Frontend ──────────────────────────────────────────────────────────────────
+frontend/                                   @Naveenub
+frontend/src/hooks/useAuth.jsx              @Naveenub
+
+# ── Infrastructure & deployment ───────────────────────────────────────────────
+infrastructure/                             @Naveenub
+infrastructure/helm/                        @Naveenub
+infrastructure/k8s/                         @Naveenub
+infrastructure/docker/                      @Naveenub
+docker-compose.yml                          @Naveenub
+docker-compose.override.yml                 @Naveenub
+
+# ── Security-sensitive files ──────────────────────────────────────────────────
+# Any change to these files always requires explicit review
+.env.example                                @Naveenub
+infrastructure/docker/nginx.conf            @Naveenub
+infrastructure/docker/nginx/nginx.conf      @Naveenub
+frontend/nginx.conf                         @Naveenub
+backend/app/core/security.py                @Naveenub
+backend/app/middleware/                     @Naveenub
+
+# ── Docs ──────────────────────────────────────────────────────────────────────
+docs/                                       @Naveenub
+README.md                                   @Naveenub
+CHANGELOG.md                                @Naveenub
