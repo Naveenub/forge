@@ -12,6 +12,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 # ── Ensure env vars are set before any app module is imported ─────────────────
+# These are required by app.core.config at import time.
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("DATABASE_URL_REPLICA", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
@@ -29,10 +30,11 @@ from sqlalchemy.ext.asyncio import (
 
 from app.db.models import Base  # noqa: E402  (must come after env setup)
 
-# ── Module-level session factory (unit tests / import-time TestClient) ────────
-# Several test modules create a TestClient(app) at *import time*, before any
-# pytest fixture can run. We seed _WriteSession / _ReadSession here so those
-# clients have a working DB when their test methods call DB routes.
+# ── Module-level session factory ──────────────────────────────────────────────
+# Several test modules (test_routes.py, test_auth_routes.py) create a
+# TestClient(app) at *import time*, before any pytest fixture can run.
+# We must seed _WriteSession / _ReadSession in app.core.database right here
+# so those clients have a working DB when their test methods call DB routes.
 _unit_db_url = "sqlite+aiosqlite:///:memory:"
 _test_engine = create_async_engine(
     _unit_db_url,
@@ -46,18 +48,6 @@ _core_db._WriteSession = _TestSessionFactory
 _core_db._ReadSession  = _TestSessionFactory
 
 
-# ── Create schema for the unit-test engine at import time ─────────────────────
-# Module-level TestClient instances (e.g. test_agents.py) use this engine
-# directly via the overridden session factory. Without create_all the tables
-# don't exist, causing "no such table" errors on routes that hit the DB.
-
-async def _init_unit_db() -> None:
-    async with _test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-asyncio.run(_init_unit_db())
-
-
 # ── Event loop ────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="session")
@@ -65,14 +55,14 @@ def event_loop_policy():
     return asyncio.DefaultEventLoopPolicy()
 
 
-# ── Integration test engine ───────────────────────────────────────────────────
+# ── Integration test engine (PostgreSQL or SQLite depending on env) ────────────
 
 def _make_integration_engine():
     """
     For integration tests we use the real DATABASE_URL if it points to
     PostgreSQL; otherwise fall back to a separate in-memory SQLite instance.
 
-    Key fix: use NullPool for asyncpg-backed engines so each connection is
+    Fix: use NullPool for asyncpg-backed engines so each connection is
     freshly created and never shared across concurrent coroutines, which
     causes the 'another operation is in progress' InterfaceError.
     """
@@ -80,7 +70,7 @@ def _make_integration_engine():
     if "postgresql" in db_url or "postgres" in db_url:
         from sqlalchemy.pool import NullPool
         return create_async_engine(db_url, echo=False, poolclass=NullPool)
-    # SQLite fallback: file-based DB to avoid sharing state with unit tests
+    # SQLite fallback: use a separate file-based DB to avoid sharing state
     return create_async_engine(
         "sqlite+aiosqlite:///./test_integration.db",
         connect_args={"check_same_thread": False},
@@ -93,13 +83,13 @@ _IntegrationSessionFactory = async_sessionmaker(
 )
 
 
-# ── Session-scoped engine fixture ─────────────────────────────────────────────
+# ── In-memory SQLite engine (unit tests) ─────────────────────────────────────
 
 @pytest_asyncio.fixture(scope="session")
 async def engine():
     """
     Session-scoped engine for integration tests.
-    Creates all tables once; individual `db` fixtures handle per-test isolation.
+    Creates all tables once and tears them down at end of session.
     """
     async with _integration_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -109,16 +99,12 @@ async def engine():
     await _integration_engine.dispose()
 
 
-# ── Per-test DB session with schema isolation ─────────────────────────────────
-
 @pytest_asyncio.fixture
 async def db(engine) -> AsyncGenerator[AsyncSession, None]:
-    """
-    Yield a per-test AsyncSession with full schema isolation.
+    """Yield a per-test AsyncSession with full schema isolation.
 
-    Uses a dedicated connection for DDL so that drop_all/create_all are never
-    interleaved with an already-open session on the same pooled connection
-    (avoids asyncpg 'another operation is in progress' errors).
+    Drops and recreates all tables before each test so tests can't bleed
+    into each other via unique constraints or leftover rows.
     """
     async with engine.connect() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -144,6 +130,8 @@ def app(db) -> FastAPI:
     _app.dependency_overrides[write_session_dep] = override_db
     _app.dependency_overrides[read_session_dep] = override_db
     yield _app
+    # Use pop() instead of clear() to avoid wiping overrides set by other
+    # test modules (e.g. the module-level mocks in test_agents.py).
     _app.dependency_overrides.pop(write_session_dep, None)
     _app.dependency_overrides.pop(read_session_dep, None)
 
