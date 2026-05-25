@@ -44,13 +44,13 @@ CurrentUserID = Annotated[UUID, Depends(_get_current_user_id)]
 class Pagination:
     def __init__(
         self,
-        page: int  = Query(1,   ge=1,   description="Page number"),
-        size: int  = Query(20,  ge=1,   le=100, description="Items per page"),
+        page: int  = Query(default=1,   ge=1,         description="Page number"),
+        size: int  = Query(default=20,  ge=1, le=100, description="Items per page"),
     ):
-        self.page   = page
-        self.size   = size
-        self.offset = (page - 1) * size
-        self.limit  = size
+        self.page   = int(page)
+        self.size   = int(size)
+        self.offset = (self.page - 1) * self.size
+        self.limit  = self.size
 
 
 PaginationDep = Annotated[Pagination, Depends(Pagination)]
