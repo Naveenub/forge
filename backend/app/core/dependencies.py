@@ -42,18 +42,23 @@ CurrentUserID = Annotated[UUID, Depends(_get_current_user_id)]
 # ── Pagination ────────────────────────────────────────────────────────────────
 
 class Pagination:
-    def __init__(
-        self,
-        page: int  = Query(default=1,   ge=1,         description="Page number"),
-        size: int  = Query(default=20,  ge=1, le=100, description="Items per page"),
-    ):
-        self.page   = int(page)
-        self.size   = int(size)
-        self.offset = (self.page - 1) * self.size
-        self.limit  = self.size
+    """Plain data class — safe to instantiate directly in tests."""
+
+    def __init__(self, page: int = 1, size: int = 20) -> None:
+        self.page   = page
+        self.size   = size
+        self.offset = (page - 1) * size
+        self.limit  = size
 
 
-PaginationDep = Annotated[Pagination, Depends(Pagination)]
+def _pagination_dep(
+    page: int = Query(default=1,  ge=1,        description="Page number"),
+    size: int = Query(default=20, ge=1, le=100, description="Items per page"),
+) -> Pagination:
+    return Pagination(page=page, size=size)
+
+
+PaginationDep = Annotated[Pagination, Depends(_pagination_dep)]
 
 
 # ── Optional auth (public endpoints) ─────────────────────────────────────────
