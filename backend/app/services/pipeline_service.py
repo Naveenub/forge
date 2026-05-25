@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -79,7 +79,7 @@ class PipelineService:
                 ),
             )
         pipeline.status = PipelineStatus.CANCELLED  # type: ignore[assignment]
-        pipeline.completed_at = datetime.now(UTC)  # type: ignore[assignment]
+        pipeline.completed_at = datetime.utcnow()  # type: ignore[assignment]
         await self.db.commit()
         await self.db.refresh(pipeline)
         return pipeline
@@ -143,14 +143,14 @@ class PipelineService:
         approval.status     = decision  # type: ignore[assignment]
         approval.decision   = decision  # type: ignore[assignment]
         approval.decided_by = decided_by  # type: ignore[assignment]
-        approval.decided_at = datetime.now(UTC)  # type: ignore[assignment]
+        approval.decided_at = datetime.utcnow()  # type: ignore[assignment]
         approval.notes      = comment  # type: ignore[assignment]
 
         if decision == "rejected":
             pipeline = await self.db.get(Pipeline, approval.pipeline_id)
             if pipeline:
                 pipeline.status = PipelineStatus.REJECTED  # type: ignore[assignment]
-                pipeline.completed_at = datetime.now(UTC)  # type: ignore[assignment]
+                pipeline.completed_at = datetime.utcnow()  # type: ignore[assignment]
 
         await self.db.commit()
         await self.db.refresh(approval)
