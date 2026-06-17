@@ -67,6 +67,16 @@ jobs:
           --ignore 80876
           --ignore 92337
 
+  codeql:
+    name: CodeQL SAST
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
@@ -179,7 +189,7 @@ jobs:
   build:
     name: Build & Push Images
     runs-on: ubuntu-latest
-    needs: [test-backend, test-frontend]
+    needs: [test-backend, test-frontend, codeql]
     if: github.event_name != 'pull_request'
     permissions:
       contents: read
