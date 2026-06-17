@@ -32,6 +32,7 @@ jobs:
   backend-test:
     name: Backend — Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: backend
@@ -54,10 +55,13 @@ jobs:
         run: |
           pytest tests/unit/ -v \
             --cov=app \
-            --cov-report=term-missing
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=75
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           flags: backend
           fail_ci_if_error: false
 
