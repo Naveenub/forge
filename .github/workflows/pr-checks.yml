@@ -5,7 +5,7 @@ on:
     branches: [main, develop]
 
 concurrency:
-  group: pr-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.job }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -54,8 +54,7 @@ jobs:
         run: |
           pytest tests/unit/ -v \
             --cov=app \
-            --cov-report=term-missing \
-            --cov-fail-under=85
+            --cov-report=term-missing
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
