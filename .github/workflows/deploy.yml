@@ -33,6 +33,7 @@ jobs:
   quality:
     name: Code Quality & Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       security-events: write
       actions: read
@@ -70,6 +71,7 @@ jobs:
   codeql:
     name: CodeQL SAST
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       security-events: write
       actions: read
@@ -93,6 +95,7 @@ jobs:
   test-backend:
     name: Backend Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: quality
 
     services:
@@ -159,6 +162,7 @@ jobs:
   test-frontend:
     name: Frontend Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: quality
 
     steps:
@@ -189,6 +193,7 @@ jobs:
   build:
     name: Build & Push Images
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [test-backend, test-frontend, codeql]
     if: github.event_name != 'pull_request'
     permissions:
@@ -249,6 +254,7 @@ jobs:
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: build
     if: github.ref == 'refs/heads/develop'
     environment: staging
@@ -301,6 +307,7 @@ jobs:
   deploy-production:
     name: Deploy to Production (Blue-Green)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: build
     if: github.event_name == 'release'
     environment: production
@@ -408,6 +415,7 @@ jobs:
   rollback:
     name: Emergency Rollback
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'rollback'
     environment: production
 
