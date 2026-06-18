@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
+    TESTING: bool = False
     ENCRYPTION_KEY: str = secrets.token_urlsafe(32)
 
     # Server
