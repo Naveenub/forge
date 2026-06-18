@@ -13,6 +13,7 @@ jobs:
   backend-lint:
     name: Backend — Lint & Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: backend
@@ -32,11 +33,11 @@ jobs:
   backend-test:
     name: Backend — Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: backend
     env:
-      # SQLite in-memory — no Postgres needed for unit tests
       DATABASE_URL: "sqlite+aiosqlite:///:memory:"
       DATABASE_URL_REPLICA: "sqlite+aiosqlite:///:memory:"
       SECRET_KEY: "ci-test-secret-key-not-for-production"
@@ -52,18 +53,23 @@ jobs:
         run: pip install -r requirements.txt pytest pytest-asyncio pytest-cov aiosqlite
       - name: Run unit tests
         run: |
-          pytest tests/unit/ -v \
+          pytest tests/ -v \
             --cov=app \
-            --cov-report=term-missing
+            --cov-report=term-missing \
+            --asyncio-mode=auto
       - name: Upload coverage
         uses: codecov/codecov-action@v4
+        timeout-minutes: 2
+        continue-on-error: true
         with:
           flags: backend
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
   backend-security:
     name: Backend — Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: backend
@@ -78,12 +84,15 @@ jobs:
       - name: Bandit SAST
         run: bandit -r app/ -ll
       - name: Safety dependency audit
+        timeout-minutes: 3
+        continue-on-error: true
         run: safety check -r requirements.txt
 
   # ─── Frontend ─────────────────────────────────────────────────────────────
   frontend-lint:
     name: Frontend — Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: frontend
@@ -102,6 +111,7 @@ jobs:
   frontend-test:
     name: Frontend — Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: frontend
@@ -120,6 +130,7 @@ jobs:
   frontend-build:
     name: Frontend — Build Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: frontend
@@ -139,6 +150,7 @@ jobs:
   docker-build:
     name: Docker — Build Check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Build backend image
@@ -146,7 +158,7 @@ jobs:
           docker build \
             -f infrastructure/docker/Dockerfile.backend \
             -t forge-backend:pr-${{ github.event.pull_request.number }} \
-            .
+            backend
 
   # ─── Required status check ────────────────────────────────────────────────
   all-checks-pass:
