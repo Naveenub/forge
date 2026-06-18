@@ -85,7 +85,7 @@ _IntegrationSessionFactory = async_sessionmaker(
 
 # ── In-memory SQLite engine (unit tests) ─────────────────────────────────────
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def engine():
     """
     Session-scoped engine for integration tests.
