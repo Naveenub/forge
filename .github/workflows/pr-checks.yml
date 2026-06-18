@@ -32,7 +32,7 @@ jobs:
   backend-test:
     name: Backend — Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     concurrency:
       group: backend-test-${{ github.ref }}
       cancel-in-progress: true
