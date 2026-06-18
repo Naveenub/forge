@@ -78,23 +78,25 @@ def _make_integration_engine():
     )
 
 
-_integration_engine = _make_integration_engine()
-
-
-# ── In-memory SQLite engine (unit tests) ─────────────────────────────────────
+# ── Integration engine (created lazily inside fixture) ────────────────────────
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def engine():
     """
     Session-scoped engine for integration tests.
-    Creates all tables once and tears them down at end of session.
+    Created lazily inside the fixture so the event loop exists when aiosqlite
+    opens its connection — avoids teardown hangs from loop/connection mismatch.
     """
-    async with _integration_engine.begin() as conn:
+    _engine = _make_integration_engine()
+    async with _engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    yield _integration_engine
-    async with _integration_engine.begin() as conn:
+    yield _engine
+    async with _engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-    await _integration_engine.dispose()
+    try:
+        await asyncio.wait_for(_engine.dispose(), timeout=5.0)
+    except asyncio.TimeoutError:
+        pass
 
 
 @pytest_asyncio.fixture(loop_scope="session")
