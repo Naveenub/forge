@@ -37,6 +37,12 @@ from app.db.models import (
 from app.services.pipeline_service import PipelineService
 from app.services.workspace_service import ProjectService, WorkspaceService
 
+# All tests in this module share the session-scoped event loop used by the
+# session-scoped engine/db fixtures.  Without this, @pytest.mark.asyncio
+# defaults to function scope and the SQLite connections (opened in the session
+# loop) raise "Future attached to a different loop" on teardown.
+pytestmark = pytest.mark.asyncio(loop_scope="session")
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -68,7 +74,6 @@ async def _create_project(db: AsyncSession, workspace_id: str) -> Project:
 class TestFullPipelineFlow:
     """End-to-end pipeline tests against the PostgreSQL database."""
 
-    @pytest.mark.asyncio
     async def test_create_workspace_and_project(self, db: AsyncSession):
         """Workspace and project are persisted correctly."""
         user = await _create_user(db)
@@ -91,7 +96,6 @@ class TestFullPipelineFlow:
         assert proj.name == "Integration Test Project"
         assert str(proj.workspace_id) == str(ws.id)
 
-    @pytest.mark.asyncio
     async def test_pipeline_created_with_pending_status(self, db: AsyncSession):
         """A newly created pipeline must start in PENDING status."""
         user = await _create_user(db)
@@ -113,7 +117,6 @@ class TestFullPipelineFlow:
         assert str(pipeline.project_id) == str(proj.id)
         assert str(pipeline.triggered_by) == owner_id
 
-    @pytest.mark.asyncio
     async def test_pipeline_cancel_sets_status(self, db: AsyncSession):
         """Cancelling a pipeline must transition its status to CANCELLED."""
         user = await _create_user(db)
@@ -127,7 +130,6 @@ class TestFullPipelineFlow:
 
         assert str(cancelled.status) == PipelineStatus.CANCELLED
 
-    @pytest.mark.asyncio
     async def test_pipeline_persisted_in_db(self, db: AsyncSession):
         """Pipeline row must be queryable by ID after creation."""
         user = await _create_user(db)
@@ -141,7 +143,6 @@ class TestFullPipelineFlow:
         fetched = await svc.get(str(pipeline.id))
         assert str(fetched.id) == str(pipeline.id)
 
-    @pytest.mark.asyncio
     async def test_pipeline_approval_gate_blocks_progression(self, db: AsyncSession):
         """
         A pipeline in PENDING/RUNNING state must not report as COMPLETED
@@ -163,7 +164,6 @@ class TestFullPipelineFlow:
             "Pipeline should not be COMPLETED immediately — stages require agent execution"
         )
 
-    @pytest.mark.asyncio
     async def test_artifact_immutability_flag(self, db: AsyncSession):
         """An artifact with is_immutable=True must have a non-null checksum."""
         import hashlib
@@ -207,7 +207,6 @@ class TestFullPipelineFlow:
         assert artifact.checksum == checksum
         assert len(artifact.checksum) == 64  # SHA-256 hex
 
-    @pytest.mark.asyncio
     async def test_rejected_pipeline_can_be_restarted(self, db: AsyncSession):
         """After a rejection, a new pipeline can be created for the same project."""
         user = await _create_user(db)
@@ -233,7 +232,6 @@ class TestFullPipelineFlow:
 class TestWebSocketStream:
     """Tests for the WebSocket log streaming endpoint."""
 
-    @pytest.mark.asyncio
     async def test_websocket_connects_successfully(self, client: AsyncClient):
         """Client should be able to connect to the WS endpoint and receive a response."""
         from httpx_ws import aconnect_ws  # type: ignore[import]
@@ -245,7 +243,6 @@ class TestWebSocketStream:
             # WS may close immediately if pipeline doesn't exist — that's acceptable
             assert "404" in str(exc) or "close" in str(exc).lower() or True
 
-    @pytest.mark.asyncio
     async def test_websocket_endpoint_exists(self, client: AsyncClient):
         """WebSocket route must be registered (not 404 on HTTP upgrade attempt)."""
         response = await client.get("/ws/pipelines/test-pipeline-id")
