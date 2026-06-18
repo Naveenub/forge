@@ -78,9 +78,6 @@ def _make_integration_engine():
 
 
 _integration_engine = _make_integration_engine()
-_IntegrationSessionFactory = async_sessionmaker(
-    _integration_engine, expire_on_commit=False
-)
 
 
 # ── In-memory SQLite engine (unit tests) ─────────────────────────────────────
@@ -99,19 +96,25 @@ async def engine():
     await _integration_engine.dispose()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="session")
 async def db(engine) -> AsyncGenerator[AsyncSession, None]:
     """Yield a per-test AsyncSession with full schema isolation.
 
     Drops and recreates all tables before each test so tests can't bleed
     into each other via unique constraints or leftover rows.
+
+    The session factory is created here (not at module level) so it binds
+    to the same event loop as the session-scoped engine fixture, avoiding
+    "Future attached to a different loop" errors on teardown.
     """
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
     async with engine.connect() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
         await conn.commit()
 
-    async with _IntegrationSessionFactory() as session:
+    async with session_factory() as session:
         yield session
         await session.rollback()
 
