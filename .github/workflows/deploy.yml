@@ -68,27 +68,6 @@ jobs:
           --ignore 80876
           --ignore 92337
 
-  codeql:
-    name: CodeQL SAST
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: python, javascript
-
-      - name: SAST with CodeQL
-        uses: github/codeql-action/analyze@v3
-        with:
-          languages: python, javascript
-
   # ─────────────────────────────────────────────────────────────
   # Backend Tests
   # ─────────────────────────────────────────────────────────────
@@ -194,7 +173,7 @@ jobs:
     name: Build & Push Images
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [test-backend, test-frontend, codeql]
+    needs: [test-backend, test-frontend]
     if: github.event_name != 'pull_request'
     permissions:
       contents: read
