@@ -45,11 +45,16 @@ async def lifespan(app: FastAPI):
     await init_db()
     await init_redis()
     await init_kafka()
-    asyncio.create_task(start_pipeline_worker())
+    worker_task = asyncio.create_task(start_pipeline_worker())
     elapsed = round((time.perf_counter() - t0) * 1000, 1)
     logger.info("All systems operational", extra={"startup_ms": elapsed})
     yield
     logger.info("Forge shutting down…")
+    worker_task.cancel()
+    try:
+        await asyncio.wait_for(asyncio.shield(worker_task), timeout=5.0)
+    except (asyncio.CancelledError, asyncio.TimeoutError):
+        pass
 
 
 app = FastAPI(
