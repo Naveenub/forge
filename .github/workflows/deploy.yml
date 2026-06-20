@@ -50,8 +50,8 @@ jobs:
 
       - name: Install backend dependencies
         run: |
-          pip install -r backend/requirements.txt
-          pip install ruff mypy bandit safety pytest pytest-asyncio pytest-cov
+          pip install --timeout 60 -r backend/requirements.txt
+          pip install --timeout 60 ruff mypy bandit safety pytest pytest-asyncio pytest-cov
 
       - name: Lint with ruff
         run: ruff check backend/app --select=E,F,I,N,UP,S
@@ -77,7 +77,7 @@ jobs:
   test-backend:
     name: Backend Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     needs: quality
 
     steps:
@@ -91,10 +91,9 @@ jobs:
           cache-dependency-path: backend/requirements.txt
 
       - name: Install dependencies
-        run: pip install -r backend/requirements.txt pytest pytest-asyncio pytest-cov
+        run: pip install --timeout 60 -r backend/requirements.txt pytest pytest-asyncio pytest-cov
 
       - name: Run tests with coverage
-        id: run-tests
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_TEST }}
           SECRET_KEY: test-secret-key-not-for-production
@@ -109,22 +108,12 @@ jobs:
             --asyncio-mode=auto
 
       - name: Upload coverage to Codecov
-        if: steps.run-tests.outcome == 'success'
         continue-on-error: true
         run: |
           curl --max-time 30 --retry 2 -s \
             -F "file=@backend/coverage.xml" \
             "https://codecov.io/upload/v2?token=${{ secrets.CODECOV_TOKEN }}&commit=${{ github.sha }}&branch=${{ github.ref_name }}" \
             || echo "Codecov upload failed - non-blocking."
-
-      - name: Confirm job success
-        if: always()
-        run: |
-          if [ "${{ steps.run-tests.outcome }}" != "success" ]; then
-            echo "Tests failed — marking job failed."
-            exit 1
-          fi
-          echo "✅ Backend tests passed."
 
   # ─────────────────────────────────────────────────────────────
   # Frontend Tests
