@@ -109,14 +109,13 @@ jobs:
             --asyncio-mode=auto
 
       - name: Upload coverage to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v4
-        timeout-minutes: 2
+        if: steps.run-tests.outcome == 'success'
         continue-on-error: true
-        with:
-          files: backend/coverage.xml
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
+        run: |
+          curl --max-time 30 --retry 2 -s \
+            -F "file=@backend/coverage.xml" \
+            "https://codecov.io/upload/v2?token=${{ secrets.CODECOV_TOKEN }}&commit=${{ github.sha }}&branch=${{ github.ref_name }}" \
+            || echo "Codecov upload failed - non-blocking."
 
       - name: Confirm job success
         if: always()
