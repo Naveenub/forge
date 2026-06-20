@@ -80,6 +80,22 @@ def _make_integration_engine():
 
 # ── Integration engine (created lazily inside fixture) ────────────────────────
 
+@pytest_asyncio.fixture(scope="session", loop_scope="session", autouse=True)
+async def cancel_dangling_tasks():
+    """Cancel any fire-and-forget tasks (e.g. pipeline orchestrator) after all tests run.
+
+    PipelineService.create() calls asyncio.create_task() for the orchestrator.
+    Without this, those tasks keep the event loop alive after pytest finishes,
+    causing the process to hang and get killed as an orphan by the CI runner.
+    """
+    yield
+    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+    for task in tasks:
+        task.cancel()
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def engine():
     """
