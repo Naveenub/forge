@@ -4,15 +4,16 @@ on:
   pull_request:
     branches: [main, develop]
 
+concurrency:
+  group: pr-checks-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ─── Backend ──────────────────────────────────────────────────────────────
   backend-lint:
     name: Backend — Lint & Type Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    concurrency:
-      group: backend-lint-${{ github.ref }}
-      cancel-in-progress: true
     defaults:
       run:
         working-directory: backend
@@ -33,9 +34,6 @@ jobs:
     name: Backend — Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    concurrency:
-      group: backend-test-${{ github.ref }}
-      cancel-in-progress: true
     defaults:
       run:
         working-directory: backend
@@ -74,9 +72,6 @@ jobs:
     name: Backend — Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    concurrency:
-      group: backend-security-${{ github.ref }}
-      cancel-in-progress: true
     defaults:
       run:
         working-directory: backend
@@ -100,9 +95,6 @@ jobs:
     name: Frontend — Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    concurrency:
-      group: frontend-lint-${{ github.ref }}
-      cancel-in-progress: true
     defaults:
       run:
         working-directory: frontend
@@ -122,9 +114,6 @@ jobs:
     name: Frontend — Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    concurrency:
-      group: frontend-test-${{ github.ref }}
-      cancel-in-progress: true
     defaults:
       run:
         working-directory: frontend
@@ -144,9 +133,6 @@ jobs:
     name: Frontend — Build Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    concurrency:
-      group: frontend-build-${{ github.ref }}
-      cancel-in-progress: true
     defaults:
       run:
         working-directory: frontend
@@ -167,9 +153,6 @@ jobs:
     name: Docker — Build Check
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    concurrency:
-      group: docker-build-${{ github.ref }}
-      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - name: Build backend image
