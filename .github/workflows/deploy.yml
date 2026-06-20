@@ -110,7 +110,7 @@ jobs:
       - name: Upload coverage to Codecov
         continue-on-error: true
         run: |
-          curl --max-time 30 --retry 2 -s \
+          curl --max-time 70 --retry 2 -s \
             -F "file=@backend/coverage.xml" \
             "https://codecov.io/upload/v2?token=${{ secrets.CODECOV_TOKEN }}&commit=${{ github.sha }}&branch=${{ github.ref_name }}" \
             || echo "Codecov upload failed - non-blocking."
