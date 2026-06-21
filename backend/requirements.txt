@@ -44,7 +44,7 @@ prometheus-client==0.21.1
 # opentelemetry-instrumentation-sqlalchemy==0.50b0
 
 # ── Anthropic SDK ─────────────────────────────────────────────────────────────
-anthropic==0.40.0
+anthropic==0.104.1
 
 # ── HTTP client (used by Anthropic SDK + notifications) ───────────────────────
 httpx==0.28.1
