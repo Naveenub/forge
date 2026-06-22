@@ -36,7 +36,7 @@ pydantic[email]==2.10.3
 structlog==24.4.0
 
 # ── Observability ─────────────────────────────────────────────────────────────
-prometheus-client==0.21.1
+prometheus-client==0.25.0
 # Optional OpenTelemetry — install separately if OTEL_ENABLED=true
 # opentelemetry-sdk==1.29.0
 # opentelemetry-exporter-otlp-proto-grpc==1.29.0
