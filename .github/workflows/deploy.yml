@@ -349,7 +349,7 @@ jobs:
 
       - name: Notify deployment
         if: steps.check.outputs.configured == 'true'
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@v3.0.3
         with:
           payload: |
             {
